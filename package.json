@@ -1,0 +1,23 @@
+{
+  "name": "tots-blog-creator",
+  "version": "1.0.0",
+  "description": "API para extraer contenido de páginas web usando Mercury Parser",
+  "main": "parse.js",
+  "scripts": {
+    "start": "node parse.js",
+    "dev": "node parse.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["web-scraping", "mercury-parser", "content-extraction", "api", "express"],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@postlight/mercury-parser": "^2.2.1",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
