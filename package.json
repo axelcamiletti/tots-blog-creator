@@ -1,0 +1,36 @@
+{
+  "name": "tots-blog-creator",
+  "version": "1.0.0",
+  "description": "Automatización para crear artículos de blog usando IA",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "create-article": "npm run build && npm start",
+    "test-research": "npm run build && node dist/test-research.js",
+    "watch": "tsc -w"
+  },
+  "keywords": [
+    "blog",
+    "automation",
+    "ai",
+    "rss",
+    "openai"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@tavily/core": "^0.5.10",
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "dotenv": "^16.3.0",
+    "openai": "^4.0.0",
+    "rss-parser": "^3.13.0"
+  }
+}
