@@ -1,23 +1,28 @@
 // Interfaces compartidas entre backend y frontend
 
+export type ArticleStatus = 'draft' | 'in-progress' | 'published' | 'paused';
+
 export interface Article {
   id: string;
   title: string;
-  metaTitle: string;
-  metaDescription: string;
+  meta_title: string;
+  meta_description: string;
   content: string; // Markdown content
   segment: 'IA' | 'Apps móviles' | 'Sportech' | 'Ciberseguridad';
   tags: string[];
   category: string;
   author: string;
   sources: string[];
-  imageUrl?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  image_url?: string;
+  status: ArticleStatus;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface CreateArticleRequest {
   topic: string;
+  segment?: string;
+  author?: string;
 }
 
 export interface CreateArticleResponse {
@@ -46,12 +51,23 @@ export interface ResearchResult {
 
 export interface GeneratedArticle {
   title: string;
-  metaTitle: string;
-  metaDescription: string;
+  meta_title: string;
+  meta_description: string;
   content: string;
   segment: string;
   tags: string[];
   category: string;
   sources: string[];
-  headerImagePrompt?: string;
+  image_url?: string;
+  header_image_prompt?: string;
+  word_count?: number;
+  estimated_read_time?: number;
+  seo_score?: number;
+}
+
+// Nueva interfaz para la creación de artículos
+export interface ArticleGenerationProgress {
+  step: 'research' | 'generation' | 'image' | 'saving' | 'completed';
+  message: string;
+  progress: number; // 0-100
 }

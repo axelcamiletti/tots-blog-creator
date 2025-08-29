@@ -1,14 +1,25 @@
 import { Routes } from '@angular/router';
-import { ArticleEditor } from './components/article-editor/article-editor';
 
 export const routes: Routes = [
   {
-    path: 'edit/:id',
-    component: ArticleEditor
+    path: '',
+    loadComponent: () => import('./components/article-generator/article-generator').then(m => m.ArticleGenerator)
   },
   {
-    path: '',
-    redirectTo: '/',
+    path: 'edit/:id',
+    loadComponent: () => import('./components/article-editor/article-editor').then(m => m.ArticleEditor)
+  },
+  {
+    path: 'create',
+    loadComponent: () => import('./components/article-generator/article-generator').then(m => m.ArticleGenerator)
+  },
+  {
+    path: 'list',
+    loadComponent: () => import('./components/article-list/article-list').then(m => m.ArticleList)
+  },
+  {
+    path: '**',
+    redirectTo: '',
     pathMatch: 'full'
   }
 ];

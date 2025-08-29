@@ -107,17 +107,17 @@ private readonly http = inject(HttpClient);
 interface Article {
   id: string;
   title: string;
-  metaTitle: string;
-  metaDescription: string;
+  meta_title: string;
+  meta_description: string;
   content: string; // Markdown
   segment: 'IA' | 'Apps móviles' | 'Sportech' | 'Ciberseguridad';
   tags: string[];
   category: string;
   author: string;
   sources: string[];
-  imageUrl?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  image_url?: string;
+  created_at: Date;
+  updated_at: Date;
 }
 ```
 

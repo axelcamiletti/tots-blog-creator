@@ -1,96 +1,139 @@
-<div class="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-  <h2 class="text-2xl font-bold text-gray-800 mb-6">🚀 Generar Nuevo Artículo</h2>
-
-  <form (ngSubmit)="generateArticle()" class="space-y-6">
-    <!-- Tema del artículo -->
-    <div>
-      <label for="topic" class="block text-sm font-medium text-gray-700 mb-2">
-        Tema del artículo *
-      </label>
-      <textarea
-        id="topic"
-        [(ngModel)]="topic"
-        name="topic"
-        rows="3"
-        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        placeholder="Ej: Principios de diseño UX para aplicaciones móviles..."
-        [disabled]="isGenerating"
-        required>
-      </textarea>
+<div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-2xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-bold text-gray-900 mb-4">
+        � Crear Nuevo Artículo
+      </h1>
+      <p class="text-lg text-gray-600">
+        Ingresa un tema y la IA generará un artículo completo y optimizado
+      </p>
     </div>
 
-    <!-- Segmento -->
-    <div>
-      <label for="segment" class="block text-sm font-medium text-gray-700 mb-2">
-        Segmento (opcional)
-      </label>
-      <select
-        id="segment"
-        [(ngModel)]="segment"
-        name="segment"
-        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        [disabled]="isGenerating">
-        <option value="">Seleccionar automáticamente</option>
-        <option *ngFor="let seg of segments" [value]="seg">{{ seg }}</option>
-      </select>
-    </div>
-
-    <!-- Autor -->
-    <div>
-      <label for="author" class="block text-sm font-medium text-gray-700 mb-2">
-        Autor
-      </label>
-      <input
-        type="text"
-        id="author"
-        [(ngModel)]="author"
-        name="author"
-        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        placeholder="Nombre del autor"
-        [disabled]="isGenerating">
-    </div>
-
-    <!-- Estado de generación -->
-    <div *ngIf="generationStatus" class="p-4 rounded-md"
-         [ngClass]="{
-           'bg-blue-50 text-blue-700': isGenerating,
-           'bg-green-50 text-green-700': generationStatus.includes('✅'),
-           'bg-red-50 text-red-700': generationStatus.includes('❌')
-         }">
-      <div class="flex items-center">
-        <div *ngIf="isGenerating" class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700 mr-2"></div>
-        <span>{{ generationStatus }}</span>
-      </div>
-    </div>
-
-    <!-- Botones -->
-    <div class="flex gap-3">
+    <!-- Navigation -->
+    <div class="mb-8">
       <button
-        type="submit"
-        [disabled]="isGenerating || !topic.trim()"
-        class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
-        <span *ngIf="!isGenerating">🤖 Generar Artículo</span>
-        <span *ngIf="isGenerating">⏳ Generando...</span>
-      </button>
-
-      <button
-        type="button"
-        (click)="clearForm()"
-        [disabled]="isGenerating"
-        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50">
-        🗑️ Limpiar
+        (click)="goToArticleList()"
+        class="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        Ver lista de artículos
       </button>
     </div>
-  </form>
 
-  <!-- Info adicional -->
-  <div class="mt-6 p-4 bg-gray-50 rounded-md">
-    <h3 class="text-sm font-medium text-gray-700 mb-2">ℹ️ Información:</h3>
-    <ul class="text-sm text-gray-600 space-y-1">
-      <li>• El proceso puede tomar 2-5 minutos</li>
-      <li>• Se realizará investigación automática sobre el tema</li>
-      <li>• Se generará una imagen de cabecera automáticamente</li>
-      <li>• El artículo será guardado en formato Markdown</li>
-    </ul>
+    <!-- Form Card -->
+    <div class="bg-white rounded-xl shadow-lg p-8">
+      <form (ngSubmit)="generateArticle()" #articleForm="ngForm">
+        <!-- Topic Input -->
+        <div class="mb-6">
+          <label for="topic" class="block text-sm font-medium text-gray-700 mb-2">
+            Tema del Artículo *
+          </label>
+          <input
+            type="text"
+            id="topic"
+            [value]="topic()"
+            (input)="onTopicChange($any($event.target).value)"
+            placeholder="Ej: Cómo la IA puede automatizar tu empresa"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            [class.border-red-500]="error()"
+            required>
+          @if (error()) {
+            <p class="mt-2 text-sm text-red-600">{{ error() }}</p>
+          }
+        </div>
+
+        <!-- Segment Selector -->
+        <div class="mb-6">
+          <label for="segment" class="block text-sm font-medium text-gray-700 mb-2">
+            Segmento
+          </label>
+          <select
+            id="segment"
+            [value]="segment()"
+            (change)="onSegmentChange($any($event.target).value)"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+            @for (option of segmentOptions; track option) {
+              <option [value]="option">{{ option }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Author Input -->
+        <div class="mb-8">
+          <label for="author" class="block text-sm font-medium text-gray-700 mb-2">
+            Autor
+          </label>
+          <input
+            type="text"
+            id="author"
+            [value]="author()"
+            (input)="onAuthorChange($any($event.target).value)"
+            placeholder="Nombre del autor"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+        </div>
+
+        <!-- Generate Button -->
+        <div class="text-center">
+          <button
+            type="submit"
+            [disabled]="isGenerating() || !topic().trim()"
+            class="inline-flex items-center px-8 py-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105">
+            @if (isGenerating()) {
+              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Generando Artículo...
+            } @else {
+              🚀 Generar Artículo
+            }
+          </button>
+        </div>
+      </form>
+
+      <!-- Generation Progress -->
+      @if (isGenerating()) {
+        <div class="mt-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
+          <div class="flex items-center mb-4">
+            <div class="flex-shrink-0">
+              <svg class="animate-spin h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <h4 class="text-lg font-semibold text-blue-900">Generando tu artículo...</h4>
+              <p class="text-blue-700">Este proceso puede tomar 2-5 minutos</p>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <div class="flex items-center text-blue-800">
+              <span class="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs mr-3">1</span>
+              🌐 Investigando el tema con IA
+            </div>
+            <div class="flex items-center text-blue-800">
+              <span class="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs mr-3">2</span>
+              � Generando contenido optimizado
+            </div>
+            <div class="flex items-center text-blue-800">
+              <span class="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs mr-3">3</span>
+              🎨 Creando imagen de cabecera
+            </div>
+            <div class="flex items-center text-blue-800">
+              <span class="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs mr-3">4</span>
+              💾 Guardando artículo
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Help Text -->
+    <div class="mt-8 text-center text-gray-500 text-sm">
+      <p>💡 Consejo: Sé específico con el tema para obtener mejores resultados</p>
+    </div>
   </div>
 </div>

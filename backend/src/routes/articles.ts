@@ -13,6 +13,9 @@ router.get('/:id', (req, res) => articlesController.getArticleById(req, res));
 // POST /api/articles/generate - Generar nuevo artículo
 router.post('/generate', (req, res) => articlesController.generateArticle(req, res));
 
+// POST /api/articles/test-image - Test generación de imágenes (DEBUG)
+router.post('/test-image', (req, res) => articlesController.testImageGeneration(req, res));
+
 // PUT /api/articles/:id - Actualizar artículo
 router.put('/:id', (req, res) => articlesController.updateArticle(req, res));
 

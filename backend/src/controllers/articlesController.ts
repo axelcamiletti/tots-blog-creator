@@ -100,19 +100,19 @@ export class ArticlesController {
             // Paso 3: Generar imagen de cabecera
             console.log('🎨 Paso 3: Generando imagen de cabecera...');
             const imageBuffer = await this.openaiService.generateHeaderImage(
-                generatedArticle.headerImagePrompt || generatedArticle.title
+                generatedArticle.header_image_prompt || generatedArticle.title
             );
 
             // Paso 4: Subir imagen a Supabase
             console.log('☁️ Paso 4: Subiendo imagen a Supabase...');
-            const imageUrl = await this.supabaseService.uploadImage(
+            const image_url = await this.supabaseService.uploadImage(
                 imageBuffer,
                 `${generatedArticle.title.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}.jpg`
             );
 
             // Paso 5: Guardar artículo en Supabase
             console.log('💾 Paso 5: Guardando artículo en base de datos...');
-            const savedArticle = await this.supabaseService.createArticle(generatedArticle, imageUrl);
+            const savedArticle = await this.supabaseService.createArticle(generatedArticle, image_url);
 
             console.log(`✅ Artículo generado y guardado exitosamente: "${savedArticle.title}"`);
 
@@ -189,8 +189,8 @@ export class ArticlesController {
             }
 
             // Eliminar imagen si existe
-            if (existingArticle.imageUrl) {
-                await this.supabaseService.deleteImage(existingArticle.imageUrl);
+            if (existingArticle.image_url) {
+                await this.supabaseService.deleteImage(existingArticle.image_url);
             }
 
             // Eliminar artículo
@@ -204,6 +204,32 @@ export class ArticlesController {
             res.json(response);
         } catch (error) {
             console.error('Error deleting article:', error);
+            
+            const response: ApiResponse<null> = {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+            };
+
+            res.status(500).json(response);
+        }
+    }
+
+    // DEBUG: Test image generation
+    async testImageGeneration(req: Request, res: Response) {
+        try {
+            console.log('🧪 Ejecutando test de generación de imágenes...');
+            
+            await this.openaiService.testImageGeneration();
+            
+            const response: ApiResponse<string> = {
+                success: true,
+                data: 'Test completado - revisa los logs del servidor',
+                message: 'Image generation test completed'
+            };
+
+            res.json(response);
+        } catch (error) {
+            console.error('Error in image test:', error);
             
             const response: ApiResponse<null> = {
                 success: false,

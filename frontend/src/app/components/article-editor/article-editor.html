@@ -1,184 +1,303 @@
-<div class="max-w-6xl mx-auto p-6">
+<div class="article-editor-container min-h-screen bg-gray-50">
   <!-- Header -->
-  <div class="flex justify-between items-center mb-6">
-    <h2 class="text-2xl font-bold text-gray-800">✏️ Editor de Artículo</h2>
-    <button
-      (click)="goBack()"
-      class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700">
-      ← Volver
-    </button>
-  </div>
+  <header class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center">
+          <button
+            (click)="goBack()"
+            class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <svg class="-ml-0.5 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Volver
+          </button>
+          <h1 class="ml-4 text-lg font-medium text-gray-900">Editor de Artículos</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+          @if (hasUnsavedChanges()) {
+            <span class="text-sm text-orange-600 font-medium">Cambios sin guardar</span>
+          }
+          <button
+            (click)="saveArticle()"
+            [disabled]="isSaving() || !article()"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+            @if (isSaving()) {
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Guardando...
+            } @else {
+              <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12"></path>
+              </svg>
+              Guardar
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
 
   <!-- Loading State -->
-  <div *ngIf="loading" class="flex justify-center items-center py-12">
-    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-    <span class="ml-2 text-gray-600">Cargando artículo...</span>
-  </div>
+  @if (isLoading()) {
+    <div class="flex items-center justify-center min-h-96">
+      <div class="text-center">
+        <svg class="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="text-lg text-gray-600 mb-2">Cargando artículo...</p>
+        <p class="text-sm text-gray-500">Por favor espera mientras cargamos el contenido</p>
+      </div>
+    </div>
+  }
 
   <!-- Error State -->
-  <div *ngIf="error && !loading" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
-    ❌ {{ error }}
-  </div>
-
-  <!-- Editor -->
-  <div *ngIf="!loading && !error && article" class="space-y-6">
-
-    <!-- Article Metadata -->
-    <div class="bg-white rounded-lg shadow-md p-6">
-      <h3 class="text-lg font-semibold text-gray-800 mb-4">📋 Metadatos del Artículo</h3>
-
-      <div class="grid md:grid-cols-2 gap-6">
-        <!-- Title -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Título *
-          </label>
-          <input
-            type="text"
-            [(ngModel)]="article.title"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Título del artículo">
-        </div>
-
-        <!-- Meta Title -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Meta Título (SEO)
-          </label>
-          <input
-            type="text"
-            [(ngModel)]="article.metaTitle"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Título para SEO (50-60 caracteres)">
-        </div>
-
-        <!-- Segment -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Segmento
-          </label>
-          <select
-            [(ngModel)]="article.segment"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option *ngFor="let segment of segments" [value]="segment">{{ segment }}</option>
-          </select>
-        </div>
-
-        <!-- Category -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Categoría
-          </label>
-          <input
-            type="text"
-            [(ngModel)]="article.category"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Categoría del artículo">
-        </div>
-
-        <!-- Author -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Autor
-          </label>
-          <input
-            type="text"
-            [(ngModel)]="article.author"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Nombre del autor">
-        </div>
-
-        <!-- Image URL -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            URL de Imagen
-          </label>
-          <input
-            type="url"
-            [(ngModel)]="article.imageUrl"
-            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="https://ejemplo.com/imagen.jpg">
-        </div>
-      </div>
-
-      <!-- Meta Description -->
-      <div class="mt-4">
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          Meta Descripción (SEO)
-        </label>
-        <textarea
-          [(ngModel)]="article.metaDescription"
-          rows="3"
-          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Descripción para SEO (150-160 caracteres)">
-        </textarea>
-      </div>
-
-      <!-- Tags -->
-      <div class="mt-4">
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          Tags
-        </label>
-        <div class="flex flex-wrap gap-2 mb-2">
-          <span *ngFor="let tag of article.tags; let i = index"
-                class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center">
-            #{{ tag }}
-            <button (click)="removeTag(i)" class="ml-2 text-blue-600 hover:text-blue-800">×</button>
-          </span>
-        </div>
-        <button
-          (click)="addTag()"
-          class="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm hover:bg-gray-200">
-          + Agregar tag
-        </button>
-      </div>
-
-      <!-- Sources -->
-      <div class="mt-4">
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          Fuentes
-        </label>
-        <div class="space-y-2 mb-2">
-          <div *ngFor="let source of article.sources; let i = index"
-               class="flex items-center gap-2 p-2 bg-gray-50 rounded">
-            <span class="flex-1 text-sm text-gray-700 truncate">🔗 {{ source }}</span>
-            <button (click)="removeSource(i)" class="text-red-600 hover:text-red-800">×</button>
+  @if (error() && !isLoading()) {
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="bg-red-50 border border-red-200 rounded-md p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800">Error</h3>
+            <p class="mt-1 text-sm text-red-700">{{ error() }}</p>
           </div>
         </div>
-        <button
-          (click)="addSource()"
-          class="bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-200">
-          + Agregar fuente
-        </button>
       </div>
     </div>
+  }
 
-    <!-- Markdown Editor -->
-    <div class="bg-white rounded-lg shadow-md p-6">
-      <h3 class="text-lg font-semibold text-gray-800 mb-4">📝 Contenido (Markdown)</h3>
-      <textarea
-        #markdownTextarea
-        class="w-full h-96 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        placeholder="Contenido del artículo en formato Markdown...">
-      </textarea>
-    </div>
+  <!-- Main Content -->
+  @if (article() && !isLoading()) {
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-    <!-- Save Button -->
-    <div class="flex justify-end">
-      <button
-        (click)="saveArticle()"
-        [disabled]="saving"
-        class="bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50">
-        <span *ngIf="!saving">💾 Guardar Artículo</span>
-        <span *ngIf="saving">⏳ Guardando...</span>
-      </button>
-    </div>
+        <!-- Main Editor Column -->
+        <div class="lg:col-span-2 space-y-6">
 
-    <!-- Image Preview -->
-    <div *ngIf="article.imageUrl" class="bg-white rounded-lg shadow-md p-6">
-      <h3 class="text-lg font-semibold text-gray-800 mb-4">🖼️ Vista previa de imagen</h3>
-      <img [src]="article.imageUrl" [alt]="article.title"
-           class="w-full max-w-md mx-auto rounded-lg shadow-sm">
+          <!-- Article Title -->
+          <div class="bg-white shadow-sm rounded-lg p-6">
+            <label for="title" class="block text-sm font-medium text-gray-700 mb-2">Título del Artículo</label>
+            <input
+              type="text"
+              id="title"
+              [value]="article()?.title || ''"
+              (input)="onInputChange('title', $event)"
+              class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder="Título del artículo"
+            />
+          </div>
+
+          <!-- Content Editor -->
+          <div class="bg-white shadow-sm rounded-lg p-6">
+            <label for="content" class="block text-sm font-medium text-gray-700 mb-2">Contenido</label>
+            <textarea
+              #markdownTextarea
+              id="content"
+              rows="20"
+              [value]="article()?.content || ''"
+              class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              placeholder="Escribe tu artículo en Markdown...">
+            </textarea>
+          </div>
+
+          <!-- Image Preview -->
+          @if (article()?.image_url) {
+            <div class="bg-white shadow-sm rounded-lg p-6">
+              <h3 class="text-sm font-medium text-gray-700 mb-4">Imagen del Artículo</h3>
+              <img
+                [src]="article()?.image_url"
+                [alt]="article()?.title"
+                class="w-full h-64 object-cover rounded-lg border border-gray-200"
+              />
+            </div>
+          }
+
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+
+          <!-- Article Stats -->
+          <div class="bg-white shadow-sm rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Información</h3>
+            <div class="space-y-3">
+              <div class="flex justify-between">
+                <span class="text-sm text-gray-600">Estado:</span>
+                <span class="text-sm font-medium text-gray-900">{{ article()?.status || 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-sm text-gray-600">Segmento:</span>
+                <span class="text-sm font-medium text-gray-900">{{ article()?.segment || 'N/A' }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-sm text-gray-600">Autor:</span>
+                <span class="text-sm font-medium text-gray-900">{{ article()?.author || 'N/A' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Article Metadata -->
+          <div class="bg-white shadow-sm rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Metadatos</h3>
+
+            <!-- Meta Title -->
+            <div class="mb-4">
+              <label for="meta_title" class="block text-sm font-medium text-gray-700 mb-2">Meta Título</label>
+              <input
+                type="text"
+                id="meta_title"
+                [value]="article()?.meta_title || ''"
+                (input)="onInputChange('meta_title', $event)"
+                class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Título para SEO"
+              />
+              <p class="mt-1 text-xs text-gray-500">{{ (article()?.meta_title || '').length }}/60 caracteres</p>
+            </div>
+
+            <!-- Meta Description -->
+            <div class="mb-4">
+              <label for="meta_description" class="block text-sm font-medium text-gray-700 mb-2">Meta Descripción</label>
+              <textarea
+                id="meta_description"
+                rows="3"
+                [value]="article()?.meta_description || ''"
+                (input)="onInputChange('meta_description', $event)"
+                class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Descripción para SEO">
+              </textarea>
+              <p class="mt-1 text-xs text-gray-500">{{ (article()?.meta_description || '').length }}/160 caracteres</p>
+            </div>
+
+            <!-- Segment -->
+            <div class="mb-4">
+              <label for="segment" class="block text-sm font-medium text-gray-700 mb-2">Segmento</label>
+              <select
+                id="segment"
+                [value]="article()?.segment || ''"
+                (change)="onSelectChange('segment', $event)"
+                class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                @for (option of segmentOptions; track option) {
+                  <option [value]="option">{{ option }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Author -->
+            <div class="mb-4">
+              <label for="author" class="block text-sm font-medium text-gray-700 mb-2">Autor</label>
+              <input
+                type="text"
+                id="author"
+                [value]="article()?.author || ''"
+                (input)="onInputChange('author', $event)"
+                class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Nombre del autor"
+              />
+            </div>
+
+            <!-- Status -->
+            <div class="mb-4">
+              <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+              <select
+                id="status"
+                [value]="article()?.status || ''"
+                (change)="onSelectChange('status', $event)"
+                class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                @for (option of statusOptions; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <!-- Tags -->
+          <div class="bg-white shadow-sm rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Tags</h3>
+            <div class="space-y-2">
+              @for (tag of article()?.tags || []; track $index) {
+                <div class="flex items-center justify-between bg-gray-100 rounded-md px-3 py-2">
+                  <span class="text-sm text-gray-700">{{ tag }}</span>
+                  <button
+                    (click)="removeTag($index)"
+                    class="text-red-500 hover:text-red-700">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                  </button>
+                </div>
+              }
+              <button
+                (click)="addTag()"
+                class="w-full text-left text-sm text-blue-600 hover:text-blue-500 py-2">
+                + Agregar tag
+              </button>
+            </div>
+          </div>
+
+          <!-- Sources -->
+          <div class="bg-white shadow-sm rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Fuentes</h3>
+            <div class="space-y-2">
+              @for (source of article()?.sources || []; track $index) {
+                <div class="flex items-center justify-between bg-gray-100 rounded-md px-3 py-2">
+                  <a [href]="source" target="_blank" class="text-sm text-blue-600 hover:text-blue-500 truncate">{{ source }}</a>
+                  <button
+                    (click)="removeSource($index)"
+                    class="text-red-500 hover:text-red-700 ml-2">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                  </button>
+                </div>
+              }
+              <button
+                (click)="addSource()"
+                class="w-full text-left text-sm text-blue-600 hover:text-blue-500 py-2">
+                + Agregar fuente
+              </button>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="bg-white shadow-sm rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Acciones</h3>
+            <div class="space-y-3">
+              <button
+                (click)="goToGenerator()"
+                class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                Crear Nuevo
+              </button>
+              <button
+                (click)="regenerateArticle()"
+                class="w-full inline-flex justify-center items-center px-4 py-2 border border-yellow-300 shadow-sm text-sm font-medium rounded-md text-yellow-700 bg-yellow-50 hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+                <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Regenerar
+              </button>
+              <button
+                (click)="deleteArticle()"
+                class="w-full inline-flex justify-center items-center px-4 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                Eliminar
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
     </div>
-  </div>
+  }
 </div>

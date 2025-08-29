@@ -1,8 +1,9 @@
 -- TOTS Blog Creator - Supabase Database Setup
 -- Ejecutar este script en el SQL Editor de Supabase
 
--- 1. Crear ENUM para segmentos
+-- 1. Crear ENUMs
 CREATE TYPE segment_type AS ENUM ('IA', 'Apps móviles', 'Sportech', 'Ciberseguridad');
+CREATE TYPE article_status AS ENUM ('draft', 'in-progress', 'published', 'paused');
 
 -- 2. Crear tabla articles
 CREATE TABLE articles (
@@ -17,6 +18,7 @@ CREATE TABLE articles (
     author TEXT DEFAULT 'TOTS Team',
     sources TEXT[] DEFAULT '{}',
     image_url TEXT,
+    status article_status DEFAULT 'draft',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -24,6 +26,7 @@ CREATE TABLE articles (
 -- 3. Crear índices para mejor performance
 CREATE INDEX idx_articles_created_at ON articles(created_at DESC);
 CREATE INDEX idx_articles_segment ON articles(segment);
+CREATE INDEX idx_articles_status ON articles(status);
 CREATE INDEX idx_articles_tags ON articles USING GIN(tags);
 
 -- 4. Crear función para actualizar updated_at automáticamente

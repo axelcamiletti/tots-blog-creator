@@ -33,11 +33,11 @@
 
       <!-- Article Image -->
       <div class="h-48 bg-gray-200 relative">
-        <img *ngIf="article.imageUrl"
-             [src]="article.imageUrl"
+        <img *ngIf="article.image_url"
+             [src]="article.image_url"
              [alt]="article.title"
              class="w-full h-full object-cover">
-        <div *ngIf="!article.imageUrl"
+        <div *ngIf="!article.image_url"
              class="w-full h-full flex items-center justify-center text-gray-400">
           🖼️ Sin imagen
         </div>
@@ -56,7 +56,7 @@
         </h3>
 
         <p class="text-gray-600 text-sm mb-3 line-clamp-2">
-          {{ article.metaDescription }}
+          {{ article.meta_description }}
         </p>
 
         <!-- Tags -->
@@ -74,7 +74,7 @@
         <!-- Metadata -->
         <div class="text-xs text-gray-500 mb-4">
           <div>👤 {{ article.author }}</div>
-          <div>📅 {{ formatDate(article.createdAt) }}</div>
+          <div>📅 {{ formatDate(article.created_at) }}</div>
           <div *ngIf="article.sources?.length">🔗 {{ article.sources.length }} fuentes</div>
         </div>
 

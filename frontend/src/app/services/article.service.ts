@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import {
   Article,
   CreateArticleRequest,
@@ -11,18 +11,25 @@ import {
   providedIn: 'root'
 })
 export class ArticleService {
+  private readonly http = inject(HttpClient);
   private readonly apiUrl = 'http://localhost:3000/api';
-
-  constructor(private http: HttpClient) {}
 
   // Obtener todos los artículos
   getArticles(): Observable<ApiResponse<Article[]>> {
     return this.http.get<ApiResponse<Article[]>>(`${this.apiUrl}/articles`);
   }
 
+  async getArticlesAsync(): Promise<ApiResponse<Article[]>> {
+    return firstValueFrom(this.getArticles());
+  }
+
   // Obtener un artículo específico
   getArticleById(id: string): Observable<ApiResponse<Article>> {
     return this.http.get<ApiResponse<Article>>(`${this.apiUrl}/articles/${id}`);
+  }
+
+  async getArticleByIdAsync(id: string): Promise<ApiResponse<Article>> {
+    return firstValueFrom(this.getArticleById(id));
   }
 
   // Generar nuevo artículo
@@ -33,6 +40,10 @@ export class ArticleService {
     );
   }
 
+  async generateArticleAsync(request: CreateArticleRequest): Promise<ApiResponse<Article>> {
+    return firstValueFrom(this.generateArticle(request));
+  }
+
   // Actualizar artículo
   updateArticle(id: string, updates: Partial<Article>): Observable<ApiResponse<Article>> {
     return this.http.put<ApiResponse<Article>>(
@@ -41,8 +52,16 @@ export class ArticleService {
     );
   }
 
+  async updateArticleAsync(id: string, updates: Partial<Article>): Promise<ApiResponse<Article>> {
+    return firstValueFrom(this.updateArticle(id, updates));
+  }
+
   // Eliminar artículo
   deleteArticle(id: string): Observable<ApiResponse<null>> {
     return this.http.delete<ApiResponse<null>>(`${this.apiUrl}/articles/${id}`);
+  }
+
+  async deleteArticleAsync(id: string): Promise<ApiResponse<null>> {
+    return firstValueFrom(this.deleteArticle(id));
   }
 }

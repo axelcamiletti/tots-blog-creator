@@ -1,49 +1,92 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  signal,
+  computed,
+  inject,
+  OnInit,
+  OnDestroy,
+  AfterViewInit,
+  ElementRef,
+  ViewChild
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ArticleService } from '../../services/article.service';
-import { Article } from '../../models/interfaces';
+import { Article, ArticleStatus } from '../../models/interfaces';
 
 // Declare SimpleMDE for TypeScript
 declare var SimpleMDE: any;
 
 @Component({
   selector: 'app-article-editor',
-  imports: [CommonModule, FormsModule],
   templateUrl: './article-editor.html',
-  styleUrl: './article-editor.css'
+  styleUrls: ['./article-editor.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CommonModule, FormsModule]
 })
 export class ArticleEditor implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('markdownTextarea', { static: false }) markdownTextarea!: ElementRef;
 
-  article: Article | null = null;
-  loading = true;
-  saving = false;
-  error = '';
-  markdownEditor: any;
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly articleService = inject(ArticleService);
 
-  segments = [
+  // State signals
+  protected readonly article = signal<Article | null>(null);
+  protected readonly isLoading = signal(true);
+  protected readonly isSaving = signal(false);
+  protected readonly error = signal<string | null>(null);
+  protected readonly hasUnsavedChanges = signal(false);
+
+  // Editor reference
+  private markdownEditor: any;
+  private autoSaveInterval: any;
+
+  // Options
+  protected readonly segmentOptions = [
     'IA',
     'Apps móviles',
     'Sportech',
     'Ciberseguridad'
   ];
 
-  constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    private articleService: ArticleService
-  ) {}
+  protected readonly statusOptions: { value: ArticleStatus; label: string; color: string }[] = [
+    { value: 'draft', label: 'Draft', color: 'bg-gray-500' },
+    { value: 'in-progress', label: 'In Progress', color: 'bg-blue-500' },
+    { value: 'published', label: 'Published', color: 'bg-green-500' },
+    { value: 'paused', label: 'Paused', color: 'bg-yellow-500' }
+  ];
 
   ngOnInit() {
+    console.log('🎯 [ArticleEditor] Iniciando componente...');
+
     const articleId = this.route.snapshot.paramMap.get('id');
-    if (articleId) {
+    const currentPath = this.route.snapshot.url.join('/');
+
+    console.log('📍 [ArticleEditor] Path actual:', currentPath);
+    console.log('🆔 [ArticleEditor] ID del artículo:', articleId);
+
+    // Verificar si estamos en modo "generating"
+    if (currentPath === 'editor/generating') {
+      console.log('⚡ [ArticleEditor] Modo generación detectado');
+      this.handleGeneratingMode();
+    } else if (articleId) {
+      console.log('📖 [ArticleEditor] Cargando artículo existente...');
       this.loadArticle(articleId);
     } else {
-      this.loading = false;
-      this.error = 'ID de artículo no proporcionado';
+      console.warn('❌ [ArticleEditor] ID de artículo no proporcionado');
+      this.isLoading.set(false);
+      this.error.set('ID de artículo no proporcionado');
     }
+
+    // Setup auto-save every 30 seconds
+    this.autoSaveInterval = setInterval(() => {
+      if (this.hasUnsavedChanges() && this.article() && !this.isSaving()) {
+        this.saveArticle(true); // Auto-save
+      }
+    }, 30000);
   }
 
   ngAfterViewInit() {
@@ -57,119 +100,279 @@ export class ArticleEditor implements OnInit, OnDestroy, AfterViewInit {
     if (this.markdownEditor) {
       this.markdownEditor.toTextArea();
     }
+    if (this.autoSaveInterval) {
+      clearInterval(this.autoSaveInterval);
+    }
   }
 
   private initializeMarkdownEditor() {
-    if (this.markdownTextarea && this.article) {
+    if (this.markdownTextarea && this.article()) {
       this.markdownEditor = new SimpleMDE({
         element: this.markdownTextarea.nativeElement,
         spellChecker: false,
         status: ['lines', 'words', 'cursor'],
         toolbar: [
-          'bold', 'italic', 'heading', '|',
+          'bold', 'italic', 'heading-1', 'heading-2', 'heading-3', '|',
           'quote', 'unordered-list', 'ordered-list', '|',
-          'link', 'image', '|',
+          'link', 'image', 'table', '|',
           'preview', 'side-by-side', 'fullscreen', '|',
           'guide'
-        ]
+        ],
+        autofocus: false,
+        placeholder: 'Escribe tu artículo en Markdown...'
       });
 
       // Set initial content
-      this.markdownEditor.value(this.article.content);
+      const article = this.article();
+      if (article) {
+        this.markdownEditor.value(article.content);
+      }
 
       // Listen for changes
       this.markdownEditor.codemirror.on('change', () => {
-        if (this.article) {
-          this.article.content = this.markdownEditor.value();
+        const currentArticle = this.article();
+        if (currentArticle) {
+          const newContent = this.markdownEditor.value();
+          if (newContent !== currentArticle.content) {
+            this.article.set({
+              ...currentArticle,
+              content: newContent
+            });
+            this.hasUnsavedChanges.set(true);
+          }
         }
       });
     }
   }
 
-  loadArticle(id: string) {
-    this.loading = true;
-    this.error = '';
+  private handleGeneratingMode() {
+    console.log('⚡ [ArticleEditor] Iniciando modo generación...');
 
-    this.articleService.getArticleById(id).subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          this.article = response.data;
-          // Initialize editor after article is loaded
-          setTimeout(() => {
-            this.initializeMarkdownEditor();
-          }, 100);
-        } else {
-          this.error = response.error || 'Artículo no encontrado';
-        }
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error('Error loading article:', error);
-        this.error = 'Error de conexión al cargar artículo';
-        this.loading = false;
-      }
-    });
-  }
+    // Establecer estado de loading con mensaje personalizado
+    this.isLoading.set(true);
+    this.error.set(null);
 
-  saveArticle() {
-    if (!this.article) return;
+    // Obtener los datos de la navegación si están disponibles
+    const navigationState = history.state;
+    console.log('📦 [ArticleEditor] Estado de navegación:', navigationState);
 
-    this.saving = true;
+    if (navigationState?.request) {
+      console.log('📋 [ArticleEditor] Datos de la request:', navigationState.request);
 
-    // Get current markdown content from editor
-    if (this.markdownEditor) {
-      this.article.content = this.markdownEditor.value();
+      // Crear un artículo temporal para mostrar mientras se genera
+      const tempArticle: Article = {
+        id: 'generating',
+        title: `Generando artículo sobre: ${navigationState.request.topic}`,
+        meta_title: '',
+        meta_description: '',
+        content: '# Generando contenido...\n\n⏳ El artículo se está generando usando IA. Por favor espera...\n\n**Tema:** ' + navigationState.request.topic + '\n**Segmento:** ' + navigationState.request.segment + '\n**Autor:** ' + navigationState.request.author,
+        segment: navigationState.request.segment,
+        tags: [],
+        category: '',
+        author: navigationState.request.author,
+        sources: [],
+        image_url: undefined,
+        status: 'draft' as ArticleStatus,
+        created_at: new Date(),
+        updated_at: new Date()
+      };
+
+      this.article.set(tempArticle);
+      console.log('🎭 [ArticleEditor] Artículo temporal creado:', tempArticle);
     }
 
-    this.articleService.updateArticle(this.article.id, this.article).subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          this.article = response.data;
-          alert('✅ Artículo guardado exitosamente');
-        } else {
-          alert(`❌ Error guardando artículo: ${response.error}`);
-        }
-        this.saving = false;
-      },
-      error: (error) => {
-        console.error('Error saving article:', error);
-        alert('❌ Error de conexión al guardar artículo');
-        this.saving = false;
+    // El loading se mantendrá hasta que la generación termine
+    // y naveguemos al artículo real
+  }
+
+  private async loadArticle(id: string) {
+    console.log('📖 [ArticleEditor] Cargando artículo con ID:', id);
+    this.isLoading.set(true);
+    this.error.set(null);
+
+    try {
+      console.log('📤 [ArticleEditor] Enviando request al backend para obtener artículo...');
+      const response = await this.articleService.getArticleByIdAsync(id);
+
+      console.log('📥 [ArticleEditor] Respuesta del backend:', response);
+
+      if (response.success && response.data) {
+        console.log('✅ [ArticleEditor] Artículo cargado exitosamente');
+        this.article.set(response.data);
+        this.hasUnsavedChanges.set(false);
+
+        // Initialize editor after article is loaded
+        setTimeout(() => {
+          this.initializeMarkdownEditor();
+        }, 100);
+      } else {
+        console.error('❌ [ArticleEditor] Error cargando artículo:', response.error);
+        this.error.set(response.error || 'Artículo no encontrado');
       }
-    });
+    } catch (error) {
+      console.error('💥 [ArticleEditor] Error inesperado cargando artículo:', error);
+      this.error.set('Error de conexión al cargar artículo');
+    } finally {
+      console.log('🏁 [ArticleEditor] Finalizando carga de artículo');
+      this.isLoading.set(false);
+    }
   }
 
-  goBack() {
-    this.router.navigate(['/']);
+  protected async saveArticle(isAutoSave = false) {
+    const currentArticle = this.article();
+    if (!currentArticle) return;
+
+    this.isSaving.set(true);
+    this.error.set(null);
+
+    try {
+      // Get current markdown content from editor
+      if (this.markdownEditor) {
+        currentArticle.content = this.markdownEditor.value();
+      }
+
+      const response = await this.articleService.updateArticleAsync(currentArticle.id, currentArticle);
+
+      if (response.success && response.data) {
+        this.article.set(response.data);
+        this.hasUnsavedChanges.set(false);
+
+        if (!isAutoSave) {
+          // Show success message only for manual saves
+          this.showSuccessMessage('✅ Artículo guardado exitosamente');
+        }
+      } else {
+        this.error.set(response.error || 'Error guardando el artículo');
+      }
+    } catch (error) {
+      console.error('Error saving article:', error);
+      this.error.set('Error de conexión al guardar artículo');
+    } finally {
+      this.isSaving.set(false);
+    }
   }
 
-  addTag() {
-    if (this.article) {
+  private showSuccessMessage(message: string) {
+    // Simple success feedback - could be replaced with a toast notification
+    const originalError = this.error();
+    this.error.set(message);
+    setTimeout(() => {
+      if (this.error() === message) {
+        this.error.set(originalError);
+      }
+    }, 3000);
+  }
+
+  protected goBack() {
+    if (this.hasUnsavedChanges()) {
+      const shouldLeave = confirm('Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?');
+      if (!shouldLeave) return;
+    }
+    this.router.navigate(['/list']);
+  }
+
+  protected goToGenerator() {
+    this.router.navigate(['/create']);
+  }
+
+  protected updateField(field: keyof Article, value: any) {
+    const currentArticle = this.article();
+    if (currentArticle) {
+      this.article.set({
+        ...currentArticle,
+        [field]: value
+      });
+      this.hasUnsavedChanges.set(true);
+    }
+  }
+
+  protected addTag() {
+    const currentArticle = this.article();
+    if (currentArticle) {
       const tag = prompt('Ingresa un nuevo tag:');
-      if (tag && tag.trim() && !this.article.tags.includes(tag.trim())) {
-        this.article.tags.push(tag.trim());
+      if (tag && tag.trim() && !currentArticle.tags.includes(tag.trim())) {
+        this.updateField('tags', [...currentArticle.tags, tag.trim()]);
       }
     }
   }
 
-  removeTag(index: number) {
-    if (this.article) {
-      this.article.tags.splice(index, 1);
+  protected removeTag(index: number) {
+    const currentArticle = this.article();
+    if (currentArticle) {
+      const newTags = [...currentArticle.tags];
+      newTags.splice(index, 1);
+      this.updateField('tags', newTags);
     }
   }
 
-  addSource() {
-    if (this.article) {
+  protected addSource() {
+    const currentArticle = this.article();
+    if (currentArticle) {
       const source = prompt('Ingresa una nueva fuente (URL):');
-      if (source && source.trim() && !this.article.sources.includes(source.trim())) {
-        this.article.sources.push(source.trim());
+      if (source && source.trim() && !currentArticle.sources.includes(source.trim())) {
+        this.updateField('sources', [...currentArticle.sources, source.trim()]);
       }
     }
   }
 
-  removeSource(index: number) {
-    if (this.article) {
-      this.article.sources.splice(index, 1);
+  protected removeSource(index: number) {
+    const currentArticle = this.article();
+    if (currentArticle) {
+      const newSources = [...currentArticle.sources];
+      newSources.splice(index, 1);
+      this.updateField('sources', newSources);
     }
+  }
+
+  protected async regenerateArticle() {
+    const currentArticle = this.article();
+    if (!currentArticle) return;
+
+    const shouldRegenerate = confirm('¿Estás seguro de que quieres regenerar este artículo? Se perderán los cambios actuales.');
+    if (!shouldRegenerate) return;
+
+    // Navigate to create page with current topic
+    this.router.navigate(['/create'], {
+      queryParams: {
+        topic: currentArticle.title,
+        segment: currentArticle.segment,
+        author: currentArticle.author
+      }
+    });
+  }
+
+  protected async deleteArticle() {
+    const currentArticle = this.article();
+    if (!currentArticle) return;
+
+    const shouldDelete = confirm(`¿Estás seguro de que quieres eliminar el artículo "${currentArticle.title}"? Esta acción no se puede deshacer.`);
+    if (!shouldDelete) return;
+
+    try {
+      this.isSaving.set(true);
+      const response = await this.articleService.deleteArticleAsync(currentArticle.id);
+
+      if (response.success) {
+        this.router.navigate(['/list']);
+      } else {
+        this.error.set(response.error || 'Error eliminando el artículo');
+      }
+    } catch (error) {
+      console.error('Error deleting article:', error);
+      this.error.set('Error de conexión al eliminar artículo');
+    } finally {
+      this.isSaving.set(false);
+    }
+  }
+
+  // Event handlers for form inputs
+  protected onInputChange(field: keyof Article, event: Event) {
+    const target = event.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+    this.updateField(field, target.value);
+  }
+
+  protected onSelectChange(field: keyof Article, event: Event) {
+    const target = event.target as HTMLSelectElement;
+    this.updateField(field, target.value);
   }
 }

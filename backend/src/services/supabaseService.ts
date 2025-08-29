@@ -19,23 +19,25 @@ export class SupabaseService {
         this.supabase = createClient(supabaseUrl, supabaseKey);
     }
 
-    async createArticle(generatedArticle: GeneratedArticle, imageUrl?: string): Promise<Article> {
-        const article: Omit<Article, 'id' | 'createdAt' | 'updatedAt'> = {
+    async createArticle(generatedArticle: GeneratedArticle, image_url?: string): Promise<Article> {
+        // Ahora no necesitamos mapping porque usamos snake_case consistentemente
+        const dbArticle = {
             title: generatedArticle.title,
-            metaTitle: generatedArticle.metaTitle,
-            metaDescription: generatedArticle.metaDescription,
+            meta_title: generatedArticle.meta_title,
+            meta_description: generatedArticle.meta_description,
             content: generatedArticle.content,
-            segment: generatedArticle.segment as any,
+            segment: generatedArticle.segment,
             tags: generatedArticle.tags,
             category: generatedArticle.category,
             author: 'TOTS Team',
             sources: generatedArticle.sources,
-            imageUrl: imageUrl
+            image_url: image_url,
+            status: 'draft'
         };
 
         const { data, error } = await this.supabase
             .from('articles')
-            .insert([article])
+            .insert([dbArticle])
             .select()
             .single();
 
@@ -137,10 +139,10 @@ export class SupabaseService {
         return publicUrl;
     }
 
-    async deleteImage(imageUrl: string): Promise<boolean> {
+    async deleteImage(image_url: string): Promise<boolean> {
         try {
             // Extract file path from URL
-            const urlParts = imageUrl.split('/');
+            const urlParts = image_url.split('/');
             const bucketIndex = urlParts.findIndex(part => part === 'article-images');
             if (bucketIndex === -1) return false;
 

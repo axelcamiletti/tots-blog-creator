@@ -22,7 +22,7 @@ async function testSupabaseConnection() {
                 id: articles[0].id,
                 title: articles[0].title,
                 segment: articles[0].segment,
-                created_at: articles[0].createdAt
+                created_at: articles[0].created_at
             });
         }
 
