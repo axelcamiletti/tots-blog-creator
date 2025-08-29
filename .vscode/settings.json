@@ -1,0 +1,19 @@
+{
+  "github.copilot.enable": {
+    "*": true,
+    "plaintext": false,
+    "markdown": true,
+    "scminput": false
+  },
+  "github.copilot.chat.welcomeMessage": "always",
+  "github.copilot.chat.instructions": [
+    {
+      "text": "You are working on TOTS Blog Creator. Follow the guidelines in .vscode/copilot-instructions.md and REQUIREMENTS.md and copilot-angular-instructions.md",
+    }
+  ],
+  "files.associations": {
+    "copilot-instructions.md": "markdown",
+    "copilot-angular-instructions.md": "markdown",
+    "REQUIREMENTS.md": "markdown",
+  }
+}

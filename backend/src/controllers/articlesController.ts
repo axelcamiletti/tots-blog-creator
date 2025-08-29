@@ -1,0 +1,216 @@
+import { Request, Response } from 'express';
+import { SupabaseService } from '../services/supabaseService';
+import { OpenAIService } from '../services/markdownOpenaiService';
+import { ApiResponse, Article, CreateArticleRequest } from '../interfaces/interfaces';
+
+export class ArticlesController {
+    private supabaseService: SupabaseService;
+    private openaiService: OpenAIService;
+
+    constructor() {
+        this.supabaseService = new SupabaseService();
+        this.openaiService = new OpenAIService();
+    }
+
+    // GET /api/articles - Obtener todos los artículos
+    async getArticles(req: Request, res: Response) {
+        try {
+            const articles = await this.supabaseService.getArticles();
+            
+            const response: ApiResponse<Article[]> = {
+                success: true,
+                data: articles,
+                message: `Found ${articles.length} articles`
+            };
+
+            res.json(response);
+        } catch (error) {
+            console.error('Error fetching articles:', error);
+            
+            const response: ApiResponse<null> = {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+            };
+
+            res.status(500).json(response);
+        }
+    }
+
+    // GET /api/articles/:id - Obtener un artículo específico
+    async getArticleById(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const article = await this.supabaseService.getArticleById(id);
+
+            if (!article) {
+                const response: ApiResponse<null> = {
+                    success: false,
+                    error: 'Article not found'
+                };
+                return res.status(404).json(response);
+            }
+
+            const response: ApiResponse<Article> = {
+                success: true,
+                data: article
+            };
+
+            res.json(response);
+        } catch (error) {
+            console.error('Error fetching article:', error);
+            
+            const response: ApiResponse<null> = {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+            };
+
+            res.status(500).json(response);
+        }
+    }
+
+    // POST /api/articles/generate - Generar nuevo artículo
+    async generateArticle(req: Request, res: Response) {
+        try {
+            const { topic, segment, author }: CreateArticleRequest & { segment?: string; author?: string } = req.body;
+
+            if (!topic || topic.trim() === '') {
+                const response: ApiResponse<null> = {
+                    success: false,
+                    error: 'Topic is required'
+                };
+                return res.status(400).json(response);
+            }
+
+            console.log(`🚀 Iniciando generación de artículo sobre: "${topic}"`);
+
+            // Paso 1: Búsqueda web con Tavily
+            console.log('🌐 Paso 1: Realizando búsqueda web...');
+            const webResults = await this.openaiService.searchWeb(topic);
+            
+            // Crear ResearchResult desde los resultados web
+            const researchData: { content: string; sources: string[] } = {
+                content: webResults.map(result => `${result.title}: ${result.content}`).join('\n\n'),
+                sources: webResults.map(result => result.url)
+            };
+
+            // Paso 2: Generar artículo
+            console.log('📝 Paso 2: Generando artículo...');
+            const generatedArticle = await this.openaiService.generateArticle(topic, researchData);
+
+            // Paso 3: Generar imagen de cabecera
+            console.log('🎨 Paso 3: Generando imagen de cabecera...');
+            const imageBuffer = await this.openaiService.generateHeaderImage(
+                generatedArticle.headerImagePrompt || generatedArticle.title
+            );
+
+            // Paso 4: Subir imagen a Supabase
+            console.log('☁️ Paso 4: Subiendo imagen a Supabase...');
+            const imageUrl = await this.supabaseService.uploadImage(
+                imageBuffer,
+                `${generatedArticle.title.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}.jpg`
+            );
+
+            // Paso 5: Guardar artículo en Supabase
+            console.log('💾 Paso 5: Guardando artículo en base de datos...');
+            const savedArticle = await this.supabaseService.createArticle(generatedArticle, imageUrl);
+
+            console.log(`✅ Artículo generado y guardado exitosamente: "${savedArticle.title}"`);
+
+            const response: ApiResponse<Article> = {
+                success: true,
+                data: savedArticle,
+                message: 'Article generated and saved successfully'
+            };
+
+            res.status(201).json(response);
+        } catch (error) {
+            console.error('❌ Error generating article:', error);
+            
+            const response: ApiResponse<null> = {
+                success: false,
+                error: error instanceof Error ? error.message : 'Failed to generate article'
+            };
+
+            res.status(500).json(response);
+        }
+    }
+
+    // PUT /api/articles/:id - Actualizar artículo
+    async updateArticle(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const updates = req.body;
+
+            // Verificar que el artículo existe
+            const existingArticle = await this.supabaseService.getArticleById(id);
+            if (!existingArticle) {
+                const response: ApiResponse<null> = {
+                    success: false,
+                    error: 'Article not found'
+                };
+                return res.status(404).json(response);
+            }
+
+            // Actualizar artículo
+            const updatedArticle = await this.supabaseService.updateArticle(id, updates);
+
+            const response: ApiResponse<Article> = {
+                success: true,
+                data: updatedArticle,
+                message: 'Article updated successfully'
+            };
+
+            res.json(response);
+        } catch (error) {
+            console.error('Error updating article:', error);
+            
+            const response: ApiResponse<null> = {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+            };
+
+            res.status(500).json(response);
+        }
+    }
+
+    // DELETE /api/articles/:id - Eliminar artículo
+    async deleteArticle(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+
+            // Verificar que el artículo existe
+            const existingArticle = await this.supabaseService.getArticleById(id);
+            if (!existingArticle) {
+                const response: ApiResponse<null> = {
+                    success: false,
+                    error: 'Article not found'
+                };
+                return res.status(404).json(response);
+            }
+
+            // Eliminar imagen si existe
+            if (existingArticle.imageUrl) {
+                await this.supabaseService.deleteImage(existingArticle.imageUrl);
+            }
+
+            // Eliminar artículo
+            await this.supabaseService.deleteArticle(id);
+
+            const response: ApiResponse<null> = {
+                success: true,
+                message: 'Article deleted successfully'
+            };
+
+            res.json(response);
+        } catch (error) {
+            console.error('Error deleting article:', error);
+            
+            const response: ApiResponse<null> = {
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+            };
+
+            res.status(500).json(response);
+        }
+    }
+}

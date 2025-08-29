@@ -1,0 +1,46 @@
+
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <header class="bg-white shadow-sm border-b">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center py-4">
+        <div class="flex items-center">
+          <h1 class="text-2xl font-bold text-gray-900">🚀 {{ title() }}</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+          <span class="text-sm text-gray-500">Sistema de Gestión de Artículos</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      <!-- Article Generator Section -->
+      <section class="mb-12">
+        <app-article-generator></app-article-generator>
+      </section>
+
+      <!-- Article List Section -->
+      <section>
+        <app-article-list></app-article-list>
+      </section>
+
+      <!-- Router Outlet for Editor -->
+      <router-outlet></router-outlet>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="text-center text-gray-500 text-sm">
+        <p>© 2025 TOTS. Creador de artículos con IA.</p>
+        <p class="mt-2">Powered by OpenAI, Supabase & Angular</p>
+      </div>
+    </div>
+  </footer>
+</div>
