@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal, inject, Output, EventEmitter } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -15,6 +15,9 @@ import { CreateArticleRequest } from '../../models/interfaces';
 export class ArticleGenerator {
   private readonly articleService = inject(ArticleService);
   private readonly router = inject(Router);
+
+  // Event to emit when modal should close
+  @Output() closeModalEvent = new EventEmitter<void>();
 
   // Form signals
   protected readonly topic = signal('');
@@ -61,12 +64,15 @@ export class ArticleGenerator {
 
       // Navegar inmediatamente al editor en modo "generando"
       console.log('🔄 [ArticleGenerator] Navegando al editor en modo generación...');
-      this.router.navigate(['/editor/generating'], {
+      this.router.navigate(['/edit/generating'], {
         state: {
           request: request,
           isGenerating: true
         }
       });
+
+      // Cerrar el modal después de navegar
+      this.closeModal();
 
       // Continuar con la generación en background
       const response = await this.articleService.generateArticleAsync(request);
@@ -112,5 +118,18 @@ export class ArticleGenerator {
 
   protected goToArticleList() {
     this.router.navigate(['/list']);
+  }
+
+  protected closeModal() {
+    console.log('🔄 [ArticleGenerator] Cerrando modal...');
+    this.closeModalEvent.emit();
+  }
+
+  protected resetForm() {
+    this.topic.set('');
+    this.segment.set('IA');
+    this.author.set('TOTS Team');
+    this.error.set(null);
+    this.isGenerating.set(false);
   }
 }

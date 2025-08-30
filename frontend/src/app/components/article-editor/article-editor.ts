@@ -63,13 +63,10 @@ export class ArticleEditor implements OnInit, OnDestroy, AfterViewInit {
     console.log('🎯 [ArticleEditor] Iniciando componente...');
 
     const articleId = this.route.snapshot.paramMap.get('id');
-    const currentPath = this.route.snapshot.url.join('/');
-
-    console.log('📍 [ArticleEditor] Path actual:', currentPath);
     console.log('🆔 [ArticleEditor] ID del artículo:', articleId);
 
     // Verificar si estamos en modo "generating"
-    if (currentPath === 'editor/generating') {
+    if (articleId === 'generating') {
       console.log('⚡ [ArticleEditor] Modo generación detectado');
       this.handleGeneratingMode();
     } else if (articleId) {

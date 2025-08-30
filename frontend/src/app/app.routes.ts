@@ -3,7 +3,7 @@ import { Routes } from '@angular/router';
 export const routes: Routes = [
   {
     path: '',
-    loadComponent: () => import('./components/article-generator/article-generator').then(m => m.ArticleGenerator)
+    loadComponent: () => import('./components/article-list/article-list').then(m => m.ArticleList)
   },
   {
     path: 'edit/:id',
@@ -12,10 +12,6 @@ export const routes: Routes = [
   {
     path: 'create',
     loadComponent: () => import('./components/article-generator/article-generator').then(m => m.ArticleGenerator)
-  },
-  {
-    path: 'list',
-    loadComponent: () => import('./components/article-list/article-list').then(m => m.ArticleList)
   },
   {
     path: '**',
