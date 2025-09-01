@@ -16,8 +16,23 @@ const PORT = process.env.PORT || 3000;
 app.use(helmet());
 
 // CORS - permitir requests desde el frontend
+const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:4200',
+    'http://localhost:4200', // Para desarrollo local
+    'https://tots-blog-creator-frontend.onrender.com' // Para producción
+];
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:4200',
+    origin: (origin, callback) => {
+        // Permitir requests sin origin (como aplicaciones móviles o Postman)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        } else {
+            return callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 

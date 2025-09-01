@@ -9,6 +9,8 @@ services:
         value: production
       - key: PORT
         value: 10000
+      - key: FRONTEND_URL
+        value: https://tots-blog-creator-frontend.onrender.com
 
   - type: static
     name: tots-blog-creator-frontend
