@@ -6,13 +6,14 @@ import {
   CreateArticleRequest,
   ApiResponse
 } from '../models/interfaces';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ArticleService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:3000/api';
+  private readonly apiUrl = environment.apiUrl;
 
   // Obtener todos los artículos
   getArticles(): Observable<ApiResponse<Article[]>> {
