@@ -9,3 +9,8 @@ services:
         value: production
       - key: PORT
         value: 10000
+
+  - type: static
+    name: tots-blog-creator-frontend
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist/frontend/browser
