@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import articlesRoutes from './routes/articles';
+import openaiRoutes from './routes/openai';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -38,6 +39,7 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/articles', articlesRoutes);
+app.use('/api/openai', openaiRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

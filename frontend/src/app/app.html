@@ -1,21 +1,41 @@
 
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-gray-800">
   <!-- Header -->
-  <header class="bg-white shadow-sm border-b">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between items-center py-4">
-        <div class="flex items-center">
-          <h1 class="text-2xl font-bold text-gray-900">🚀 {{ title() }}</h1>
-        </div>
-        <div class="flex items-center space-x-4">
-          <span class="text-sm text-gray-500">Sistema de Gestión de Artículos</span>
+  <header class="border-b border-b-gray-700">
+    <div class="max-w-7xl flex items-center py-4 gap-6 mx-auto px-4 sm:px-6 lg:px-8">
+      <h1 class="text-2xl font-bold text-gray-50 mr-auto">{{ title() }}</h1>
+
+      <!-- OpenAI Credit Progress Bar -->
+        @if (credits$ | async; as credits) {
+          <div class="flex flex-col items-center gap-1">
+            <span class="text-xs text-gray-400">Créditos OpenAI</span>
+            <div class="w-32 bg-gray-700 rounded-full h-2">
+          <div
+            class="h-2 rounded-full transition-all duration-300"
+            [class]="getCreditBarColor(credits.usedPercentage)"
+            [style.width.%]="credits.usedPercentage">
+          </div>
+            </div>
+            <div class="flex items-center gap-2">
+          <span class="text-xs" [class]="getCreditTextColor(credits.usedPercentage)">
+            ${{ credits.used | number:'1.2-2' }} / ${{ credits.totalBudget | number:'1.2-2' }}
+          </span>
           <button
-            (click)="openCreateArticleModal()"
-            class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
-            ➕ Crear Nuevo Artículo
+            (click)="refreshCredits()"
+            class="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+            title="Actualizar créditos">
+            🔄
           </button>
-        </div>
-      </div>
+            </div>
+          </div>
+        }
+
+      <span class="text-sm text-gray-500">Sistema de Gestión de Artículos</span>
+      <button
+        (click)="createArticleModal.showModal()"
+        class="btn btn-primary">
+        Crear Nuevo Artículo
+      </button>
     </div>
   </header>
 
@@ -30,17 +50,16 @@
   </main>
 
   <!-- Footer -->
-  <footer class="bg-white border-t mt-12">
+  <footer class="bg-gray-800 border-t border-t-gray-700 mt-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div class="text-center text-gray-500 text-sm">
+      <div class="text-center text-gray-400 text-sm">
         <p>© 2025 TOTS. Creador de artículos con IA.</p>
-        <p class="mt-2">Powered by OpenAI, Supabase & Angular</p>
       </div>
     </div>
   </footer>
 </div>
 
-<!-- Create Article Modal -->
-@if (showCreateModal()) {
-  <app-article-generator (closeModalEvent)="closeCreateArticleModal()"></app-article-generator>
-}
+
+<dialog #createArticleModal closedby="any">
+  <app-article-generator></app-article-generator>
+</dialog>

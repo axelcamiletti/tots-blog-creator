@@ -3,7 +3,7 @@
 
 -- 1. Crear ENUMs
 CREATE TYPE segment_type AS ENUM ('IA', 'Apps móviles', 'Sportech', 'Ciberseguridad');
-CREATE TYPE article_status AS ENUM ('draft', 'in-progress', 'published', 'paused');
+CREATE TYPE article_status AS ENUM ('draft', 'in-progress', 'published', 'paused', 'ready-to-publish');
 
 -- 2. Crear tabla articles
 CREATE TABLE articles (

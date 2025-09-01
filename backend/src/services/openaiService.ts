@@ -124,7 +124,7 @@ Responde solo con el texto de búsqueda, sin explicaciones adicionales.`;
         try {
             const results = await this.tabilyApiKey.search(query, {
                 search_depth: "advanced",
-                max_results: 5
+                max_results: 10
             });
 
             console.log(`✅ Encontrados ${results.results.length} resultados web`);
@@ -228,7 +228,7 @@ ASIGNACIONES AUTOMÁTICAS:
                                 },
                                 status: {
                                     type: "string",
-                                    enum: ["draft", "in-progress", "published", "paused"],
+                                    enum: ["draft", "in-progress", "published", "paused", "ready-to-publish"],
                                     description: "Estado del artículo"
                                 },
                                 header_image_prompt: {

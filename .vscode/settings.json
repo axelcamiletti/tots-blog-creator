@@ -15,5 +15,7 @@
     "copilot-instructions.md": "markdown",
     "copilot-angular-instructions.md": "markdown",
     "REQUIREMENTS.md": "markdown",
-  }
+  },
+  "css.customData": [".vscode/tailwind.json"],
+  "scss.lint.unknownAtRules": "ignore"
 }

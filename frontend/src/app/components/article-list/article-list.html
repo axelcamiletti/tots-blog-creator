@@ -1,112 +1,124 @@
-<div class="max-w-6xl mx-auto p-6">
+<div class="">
+
+  <!-- Stats -->
+  @if (!loading() && articles().length > 0) {
+    <div class="mb-8 bg-gray-600 rounded-lg p-4">
+      <h3 class="font-medium text-gray-50 mb-2">📊 Estadísticas</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div class="text-center">
+          <div class="font-semibold text-lg text-gray-50">{{ articleStats().total }}</div>
+          <div class="text-gray-400">Total artículos</div>
+        </div>
+        @for (segment of segments; track segment) {
+          <div class="text-center">
+            <div class="font-semibold text-lg text-gray-50">
+              {{ articleStats().bySegment[segment] }}
+            </div>
+            <div class="text-gray-400">{{ segment }}</div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
   <div class="flex justify-between items-center mb-6">
-    <h2 class="text-2xl font-bold text-gray-800">📚 Artículos Generados</h2>
+    <h2 class="text-2xl font-bold text-gray-50"> Artículos Generados</h2>
     <button
       (click)="loadArticles()"
-      class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500">
+      class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 cursor-pointer focus:ring-gray-500">
       🔄 Actualizar
     </button>
   </div>
 
   <!-- Loading State -->
-  <div *ngIf="loading" class="flex justify-center items-center py-12">
-    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-    <span class="ml-2 text-gray-600">Cargando artículos...</span>
-  </div>
+  @if (loading()) {
+    <div class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <span class="ml-2 text-gray-500">Cargando artículos...</span>
+    </div>
+  }
 
   <!-- Error State -->
-  <div *ngIf="error && !loading" class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
-    ❌ {{ error }}
-  </div>
+  @if (error() && !loading()) {
+    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
+      ❌ {{ error() }}
+    </div>
+  }
 
   <!-- Empty State -->
-  <div *ngIf="!loading && !error && articles.length === 0" class="text-center py-12">
-    <div class="text-gray-400 text-6xl mb-4">📝</div>
-    <h3 class="text-lg font-medium text-gray-700 mb-2">No hay artículos aún</h3>
-    <p class="text-gray-500">Genera tu primer artículo usando la herramienta de arriba.</p>
-  </div>
+  @if (!loading() && !error() && articles().length === 0) {
+    <div class="text-center py-12">
+      <div class="text-gray-400 text-6xl mb-4">📝</div>
+      <h3 class="text-lg font-medium text-gray-700 mb-2">No hay artículos aún</h3>
+      <p class="text-gray-500">Genera tu primer artículo usando la herramienta de arriba.</p>
+    </div>
+  }
 
   <!-- Articles Grid -->
-  <div *ngIf="!loading && articles.length > 0" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-    <div *ngFor="let article of articles"
-         class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+  @if (!loading() && articles().length > 0) {
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      @for (article of articles(); track article.id) {
+        <div class="bg-gray-600 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden">
 
-      <!-- Article Image -->
-      <div class="h-48 bg-gray-200 relative">
-        <img *ngIf="article.image_url"
-             [src]="article.image_url"
-             [alt]="article.title"
-             class="w-full h-full object-cover">
-        <div *ngIf="!article.image_url"
-             class="w-full h-full flex items-center justify-center text-gray-400">
-          🖼️ Sin imagen
+          <!-- Article Image -->
+          <div class="h-48 bg-gray-400 relative">
+            @if (article.image_url) {
+              <img [src]="article.image_url"
+                   [alt]="article.title"
+                   class="w-full h-full object-cover">
+            } @else {
+              <div class="w-full h-full flex items-center justify-center text-gray-200">
+                🖼️ Sin imagen
+              </div>
+            }
+
+            <!-- Badges Container -->
+            <div class="absolute top-0 p-2 left-0 flex justify-between gap-1 w-full">
+              <!-- Segment Badge -->
+              <span class="px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm"
+                    [class]="getSegmentColor(article.segment)">
+                {{ article.segment }}
+              </span>
+
+              <!-- Status Badge -->
+              <span class="px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm"
+                    [class]="getStatusColor(article.status)">
+                {{ getStatusLabel(article.status) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Article Content -->
+          <div class="p-4">
+            <h3 class="font-semibold text-xl text-gray-50 mb-2 line-clamp-2">
+              {{ article.title }}
+            </h3>
+
+            <p class="text-gray-300 text-sm mb-3 line-clamp-3">
+              {{ article.meta_description }}
+            </p>
+
+            <!-- Metadata -->
+            <div class="flex gap-2 text-xs font-medium text-gray-200 mb-4">
+              <div class="bg-gray-500 p-2 rounded-md">👤 {{ article.author }}</div>
+              <div class="bg-gray-500 p-2 rounded-md">📅 {{ formatDate(article.created_at) }}</div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-2 mt-auto">
+              <a [routerLink]="['/edit', article.id]"
+                 class="flex-1 bg-blue-600 text-white text-center py-2 px-3 rounded-md text-sm hover:bg-blue-700 transition-colors">
+                ✏️ Editar
+              </a>
+              <button (click)="deleteArticle(article)" class="bg-red-600 text-white py-2 px-3 rounded-md text-sm hover:bg-red-700 transition-colors">
+                🗑️
+              </button>
+            </div>
+          </div>
         </div>
-
-        <!-- Segment Badge -->
-        <span class="absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-medium"
-              [ngClass]="getSegmentColor(article.segment)">
-          {{ article.segment }}
-        </span>
-      </div>
-
-      <!-- Article Content -->
-      <div class="p-4">
-        <h3 class="font-semibold text-lg text-gray-800 mb-2 line-clamp-2">
-          {{ article.title }}
-        </h3>
-
-        <p class="text-gray-600 text-sm mb-3 line-clamp-2">
-          {{ article.meta_description }}
-        </p>
-
-        <!-- Tags -->
-        <div class="flex flex-wrap gap-1 mb-3">
-          <span *ngFor="let tag of article.tags.slice(0, 3)"
-                class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
-            #{{ tag }}
-          </span>
-          <span *ngIf="article.tags.length > 3"
-                class="text-gray-500 text-xs">
-            +{{ article.tags.length - 3 }} más
-          </span>
-        </div>
-
-        <!-- Metadata -->
-        <div class="text-xs text-gray-500 mb-4">
-          <div>👤 {{ article.author }}</div>
-          <div>📅 {{ formatDate(article.created_at) }}</div>
-          <div *ngIf="article.sources?.length">🔗 {{ article.sources.length }} fuentes</div>
-        </div>
-
-        <!-- Actions -->
-        <div class="flex gap-2">
-          <a [routerLink]="['/edit', article.id]"
-             class="flex-1 bg-blue-600 text-white text-center py-2 px-3 rounded-md text-sm hover:bg-blue-700 transition-colors">
-            ✏️ Editar
-          </a>
-          <button (click)="deleteArticle(article)"
-                  class="bg-red-600 text-white py-2 px-3 rounded-md text-sm hover:bg-red-700 transition-colors">
-            🗑️
-          </button>
-        </div>
-      </div>
+      }
     </div>
-  </div>
+  }
 
-  <!-- Stats -->
-  <div *ngIf="!loading && articles.length > 0" class="mt-8 bg-gray-50 rounded-lg p-4">
-    <h3 class="font-medium text-gray-700 mb-2">📊 Estadísticas</h3>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-      <div class="text-center">
-        <div class="font-semibold text-blue-600">{{ articles.length }}</div>
-        <div class="text-gray-600">Total artículos</div>
-      </div>
-      <div class="text-center" *ngFor="let segment of ['IA', 'Apps móviles', 'Sportech', 'Ciberseguridad']">
-        <div class="font-semibold text-green-600">
-          {{ getArticleCountBySegment(segment) }}
-        </div>
-        <div class="text-gray-600">{{ segment }}</div>
-      </div>
-    </div>
-  </div>
+
 </div>

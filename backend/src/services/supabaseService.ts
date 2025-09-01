@@ -60,6 +60,13 @@ export class SupabaseService {
             throw new Error(`Failed to fetch articles: ${error.message}`);
         }
 
+        console.log('📥 [SupabaseService] Artículos obtenidos:', data?.map(article => ({
+            id: article.id,
+            title: article.title,
+            status: article.status,
+            statusType: typeof article.status
+        })));
+
         return data as Article[];
     }
 
@@ -82,10 +89,19 @@ export class SupabaseService {
     }
 
     async updateArticle(id: string, updates: Partial<Article>): Promise<Article> {
+        console.log('🔄 [SupabaseService] Actualizando artículo:', {
+            id,
+            fields: Object.keys(updates),
+            status: updates.status,
+            title: updates.title
+        });
+
         const updateData = {
             ...updates,
             updated_at: new Date().toISOString()
         };
+
+        console.log('📤 [SupabaseService] Datos a actualizar:', updateData);
 
         const { data, error } = await this.supabase
             .from('articles')
@@ -95,9 +111,16 @@ export class SupabaseService {
             .single();
 
         if (error) {
-            console.error('Error updating article:', error);
+            console.error('❌ [SupabaseService] Error updating article:', error);
             throw new Error(`Failed to update article: ${error.message}`);
         }
+
+        console.log('✅ [SupabaseService] Artículo actualizado exitosamente:', {
+            id: data.id,
+            status: data.status,
+            title: data.title,
+            updated_at: data.updated_at
+        });
 
         return data as Article;
     }

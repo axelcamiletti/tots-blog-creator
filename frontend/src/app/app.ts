@@ -1,7 +1,9 @@
 import { Component, signal, inject } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ArticleGenerator } from './components/article-generator/article-generator';
+import { OpenaiCreditsService, OpenAICredits } from './services/openai-credits.service';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -10,16 +12,39 @@ import { ArticleGenerator } from './components/article-generator/article-generat
   styleUrl: './app.css'
 })
 export class App {
-  protected readonly title = signal('TOTS Blog Creator');
-  protected readonly showCreateModal = signal(false);
+  protected readonly title = signal('🚀 TOTS Blog Creator');
+  /* protected readonly showCreateModal = signal(false); */
 
-  private router = inject(Router);
+  private creditsService = inject(OpenaiCreditsService);
 
-  openCreateArticleModal(): void {
+  protected credits$: Observable<OpenAICredits> = this.creditsService.getCurrentCredits();
+
+  constructor() {
+    // Cargar créditos automáticamente al inicializar la aplicación
+    this.creditsService.loadCredits();
+  }
+
+  getCreditBarColor(percentage: number): string {
+    if (percentage > 50) return 'bg-green-500';
+    if (percentage > 25) return 'bg-yellow-500';
+    return 'bg-red-500';
+  }
+
+  getCreditTextColor(percentage: number): string {
+    if (percentage > 50) return 'text-green-400';
+    if (percentage > 25) return 'text-yellow-400';
+    return 'text-red-400';
+  }
+
+  refreshCredits(): void {
+    this.creditsService.refreshCredits();
+  }
+
+  /* openCreateArticleModal(): void {
     this.showCreateModal.set(true);
   }
 
   closeCreateArticleModal(): void {
     this.showCreateModal.set(false);
-  }
+  } */
 }

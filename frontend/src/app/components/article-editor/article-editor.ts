@@ -28,6 +28,7 @@ declare var SimpleMDE: any;
 })
 export class ArticleEditor implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('markdownTextarea', { static: false }) markdownTextarea!: ElementRef;
+  @ViewChild('titleTextarea', { static: false }) titleTextarea!: ElementRef;
 
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -53,11 +54,18 @@ export class ArticleEditor implements OnInit, OnDestroy, AfterViewInit {
   ];
 
   protected readonly statusOptions: { value: ArticleStatus; label: string; color: string }[] = [
-    { value: 'draft', label: 'Draft', color: 'bg-gray-500' },
-    { value: 'in-progress', label: 'In Progress', color: 'bg-blue-500' },
-    { value: 'published', label: 'Published', color: 'bg-green-500' },
-    { value: 'paused', label: 'Paused', color: 'bg-yellow-500' }
+    { value: 'draft', label: '📝 Borrador', color: 'bg-gray-500' },
+    { value: 'in-progress', label: '⚠️ En Progreso', color: 'bg-blue-500' },
+    { value: 'ready-to-publish', label: '✅ Listo para Publicar', color: 'bg-green-500' },
+    { value: 'published', label: '🌐 Publicado', color: 'bg-black' },
+    { value: 'paused', label: '⏸️ Pausado', color: 'bg-yellow-500' }
   ];
+
+  // Computed para obtener el estado actual del artículo
+  protected readonly currentStatus = computed(() => {
+    const article = this.article();
+    return article?.status || 'draft';
+  });
 
   ngOnInit() {
     console.log('🎯 [ArticleEditor] Iniciando componente...');
@@ -90,6 +98,7 @@ export class ArticleEditor implements OnInit, OnDestroy, AfterViewInit {
     // Initialize SimpleMDE after view is initialized
     setTimeout(() => {
       this.initializeMarkdownEditor();
+      this.initializeTitleTextarea();
     }, 100);
   }
 
@@ -107,12 +116,10 @@ export class ArticleEditor implements OnInit, OnDestroy, AfterViewInit {
       this.markdownEditor = new SimpleMDE({
         element: this.markdownTextarea.nativeElement,
         spellChecker: false,
-        status: ['lines', 'words', 'cursor'],
         toolbar: [
           'bold', 'italic', 'heading-1', 'heading-2', 'heading-3', '|',
           'quote', 'unordered-list', 'ordered-list', '|',
-          'link', 'image', 'table', '|',
-          'preview', 'side-by-side', 'fullscreen', '|',
+          'link', 'image', '|',
           'guide'
         ],
         autofocus: false,
@@ -139,6 +146,15 @@ export class ArticleEditor implements OnInit, OnDestroy, AfterViewInit {
           }
         }
       });
+    }
+  }
+
+  private initializeTitleTextarea() {
+    if (this.titleTextarea && this.article()) {
+      // Auto-resize the title textarea to fit initial content
+      setTimeout(() => {
+        this.autoResizeTextarea(this.titleTextarea.nativeElement);
+      }, 50);
     }
   }
 
@@ -194,13 +210,19 @@ export class ArticleEditor implements OnInit, OnDestroy, AfterViewInit {
       console.log('📥 [ArticleEditor] Respuesta del backend:', response);
 
       if (response.success && response.data) {
-        console.log('✅ [ArticleEditor] Artículo cargado exitosamente');
+        console.log('✅ [ArticleEditor] Artículo cargado exitosamente:', {
+          id: response.data.id,
+          title: response.data.title,
+          status: response.data.status,
+          statusType: typeof response.data.status
+        });
         this.article.set(response.data);
         this.hasUnsavedChanges.set(false);
 
         // Initialize editor after article is loaded
         setTimeout(() => {
           this.initializeMarkdownEditor();
+          this.initializeTitleTextarea();
         }, 100);
       } else {
         console.error('❌ [ArticleEditor] Error cargando artículo:', response.error);
@@ -219,6 +241,12 @@ export class ArticleEditor implements OnInit, OnDestroy, AfterViewInit {
     const currentArticle = this.article();
     if (!currentArticle) return;
 
+    console.log('💾 [ArticleEditor] Guardando artículo:', {
+      id: currentArticle.id,
+      status: currentArticle.status,
+      title: currentArticle.title
+    });
+
     this.isSaving.set(true);
     this.error.set(null);
 
@@ -228,9 +256,23 @@ export class ArticleEditor implements OnInit, OnDestroy, AfterViewInit {
         currentArticle.content = this.markdownEditor.value();
       }
 
+      console.log('📤 [ArticleEditor] Enviando al backend:', {
+        id: currentArticle.id,
+        status: currentArticle.status,
+        fieldsToUpdate: Object.keys(currentArticle)
+      });
+
       const response = await this.articleService.updateArticleAsync(currentArticle.id, currentArticle);
 
+      console.log('📥 [ArticleEditor] Respuesta del backend:', response);
+
       if (response.success && response.data) {
+        console.log('✅ [ArticleEditor] Artículo actualizado exitosamente:', {
+          id: response.data.id,
+          status: response.data.status,
+          title: response.data.title
+        });
+
         this.article.set(response.data);
         this.hasUnsavedChanges.set(false);
 
@@ -239,10 +281,11 @@ export class ArticleEditor implements OnInit, OnDestroy, AfterViewInit {
           this.showSuccessMessage('✅ Artículo guardado exitosamente');
         }
       } else {
+        console.error('❌ [ArticleEditor] Error en la respuesta:', response.error);
         this.error.set(response.error || 'Error guardando el artículo');
       }
     } catch (error) {
-      console.error('Error saving article:', error);
+      console.error('💥 [ArticleEditor] Error inesperado guardando artículo:', error);
       this.error.set('Error de conexión al guardar artículo');
     } finally {
       this.isSaving.set(false);
@@ -268,13 +311,15 @@ export class ArticleEditor implements OnInit, OnDestroy, AfterViewInit {
     this.router.navigate(['/list']);
   }
 
-  protected goToGenerator() {
-    this.router.navigate(['/create']);
-  }
-
   protected updateField(field: keyof Article, value: any) {
     const currentArticle = this.article();
     if (currentArticle) {
+      console.log(`🔧 [ArticleEditor] Actualizando campo '${field}':`, {
+        valorAnterior: currentArticle[field],
+        valorNuevo: value,
+        tipo: typeof value
+      });
+
       this.article.set({
         ...currentArticle,
         [field]: value
@@ -321,23 +366,6 @@ export class ArticleEditor implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
-  protected async regenerateArticle() {
-    const currentArticle = this.article();
-    if (!currentArticle) return;
-
-    const shouldRegenerate = confirm('¿Estás seguro de que quieres regenerar este artículo? Se perderán los cambios actuales.');
-    if (!shouldRegenerate) return;
-
-    // Navigate to create page with current topic
-    this.router.navigate(['/create'], {
-      queryParams: {
-        topic: currentArticle.title,
-        segment: currentArticle.segment,
-        author: currentArticle.author
-      }
-    });
-  }
-
   protected async deleteArticle() {
     const currentArticle = this.article();
     if (!currentArticle) return;
@@ -366,6 +394,26 @@ export class ArticleEditor implements OnInit, OnDestroy, AfterViewInit {
   protected onInputChange(field: keyof Article, event: Event) {
     const target = event.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
     this.updateField(field, target.value);
+  }
+
+  protected onTitleInput(event: Event) {
+    const target = event.target as HTMLTextAreaElement;
+
+    // Update the article field
+    this.updateField('title', target.value);
+
+    // Auto-resize the textarea
+    this.autoResizeTextarea(target);
+  }
+
+  private autoResizeTextarea(textarea: HTMLTextAreaElement) {
+    // Reset height to auto to get the correct scrollHeight
+    textarea.style.height = 'auto';
+
+    // Set the height to the scrollHeight to fit the content
+    // Add a minimum height equivalent to one line
+    const minHeight = 60; // Minimum height in pixels
+    textarea.style.height = Math.max(textarea.scrollHeight, minHeight) + 'px';
   }
 
   protected onSelectChange(field: keyof Article, event: Event) {

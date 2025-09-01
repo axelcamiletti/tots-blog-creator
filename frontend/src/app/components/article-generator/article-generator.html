@@ -1,148 +1,134 @@
-<!-- Modal Backdrop -->
-<div
-  class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-  (click)="closeModal()">
+<div class="modal-content">
 
-  <!-- Modal Content -->
-  <div
-    class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-    (click)="$event.stopPropagation()">
+  <!-- Modal Header -->
+  <div class="modal-header">
+    <div class="text-2xl"><b>🚀 Crear Nuevo Artículo</b></div>
+    <button
+      (click)="closeModal()"
+      class="btn-icon btn-secondary">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </button>
+  </div>
 
-    <!-- Modal Header -->
-    <div class="px-8 py-6 border-b border-gray-200">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-bold text-gray-900">
-            🚀 Crear Nuevo Artículo
-          </h1>
-          <p class="text-gray-600 mt-1">
-            Ingresa un tema y la IA generará un artículo completo
+  <!-- Modal Body -->
+  <div class="modal-body">
+    <form #articleForm="ngForm" class="space-y-6">
+      <!-- Topic Input -->
+      <div class="group">
+        <label for="topic">💡 Tema del Artículo</label>
+        <input
+          type="text"
+          id="topic"
+          [value]="topic()"
+          (input)="onTopicChange($any($event.target).value)"
+          placeholder="Ej: Cómo la IA puede automatizar procesos empresariales"
+          [class.input-error]="error()"
+          required>
+        @if (error()) {
+          <p class="mt-2 text-sm text-red-600 flex items-center gap-2">
+            <span>⚠️</span>
+            {{ error() }}
           </p>
-        </div>
-        <button
-          (click)="closeModal()"
-          class="text-gray-400 hover:text-gray-600 transition-colors">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
+        }
       </div>
-    </div>
 
-    <!-- Modal Body -->
-    <div class="px-8 py-6">
-      <form (ngSubmit)="generateArticle()" #articleForm="ngForm">
-        <!-- Topic Input -->
-        <div class="mb-6">
-          <label for="topic" class="block text-sm font-medium text-gray-700 mb-2">
-            Tema del Artículo *
-          </label>
-          <input
-            type="text"
-            id="topic"
-            [value]="topic()"
-            (input)="onTopicChange($any($event.target).value)"
-            placeholder="Ej: Cómo la IA puede automatizar tu empresa"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            [class.border-red-500]="error()"
-            required>
-          @if (error()) {
-            <p class="mt-2 text-sm text-red-600">{{ error() }}</p>
+      <!-- Segment Selector -->
+      <div class="group">
+        <label for="segment">🎯 Segmento</label>
+        <select
+          id="segment"
+          [value]="segment()"
+          (change)="onSegmentChange($any($event.target).value)"
+          class="select">
+          @for (option of segmentOptions; track option) {
+            <option [value]="option">
+              @switch (option) {
+                @case ('IA') { 🤖 IA }
+                @case ('Apps móviles') { 📱 Apps móviles }
+                @case ('Sportech') { ⚽ Sportech }
+                @case ('Ciberseguridad') { 🔒 Ciberseguridad }
+              }
+            </option>
           }
-        </div>
+        </select>
+      </div>
 
-        <!-- Segment Selector -->
-        <div class="mb-6">
-          <label for="segment" class="block text-sm font-medium text-gray-700 mb-2">
-            Segmento
-          </label>
-          <select
-            id="segment"
-            [value]="segment()"
-            (change)="onSegmentChange($any($event.target).value)"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-            @for (option of segmentOptions; track option) {
-              <option [value]="option">{{ option }}</option>
-            }
-          </select>
-        </div>
+      <!-- Author Input -->
+      <div class="group">
+        <label for="author">👤 Autor</label>
+        <input
+          type="text"
+          id="author"
+          [value]="author()"
+          (input)="onAuthorChange($any($event.target).value)"
+          placeholder="Nombre del autor"
+          class="input">
+      </div>
+    </form>
 
-        <!-- Author Input -->
-        <div class="mb-6">
-          <label for="author" class="block text-sm font-medium text-gray-700 mb-2">
-            Autor
-          </label>
-          <input
-            type="text"
-            id="author"
-            [value]="author()"
-            (input)="onAuthorChange($any($event.target).value)"
-            placeholder="Nombre del autor"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
-        </div>
-
-        <!-- Modal Footer -->
-        <div class="flex justify-end space-x-4 pt-4 border-t border-gray-200">
-          <button
-            type="button"
-            (click)="closeModal()"
-            [disabled]="isGenerating()"
-            class="px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50">
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            [disabled]="isGenerating() || !topic().trim()"
-            class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-            @if (isGenerating()) {
-              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Generando...
-            } @else {
-              🚀 Generar Artículo
-            }
-          </button>
-        </div>
-      </form>
-
-      <!-- Generation Progress -->
-      @if (isGenerating()) {
-        <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <div class="flex items-center mb-3">
+    <!-- Generation Progress -->
+    <!-- @if (isGenerating()) {
+      <div class="card mt-6 animate-slide-in-up">
+        <div class="card-body !py-4">
+          <div class="flex items-center mb-4">
             <div class="flex-shrink-0">
-              <svg class="animate-spin h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
+              <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <svg class="loading-spinner text-white" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
             </div>
-            <div class="ml-3">
-              <h4 class="text-sm font-semibold text-blue-900">Generando tu artículo...</h4>
-              <p class="text-xs text-blue-700">Este proceso puede tomar 2-5 minutos</p>
+            <div class="ml-4">
+              <h4 class="text-base font-bold text-gray-900">🎨 Creando tu artículo...</h4>
+              <p class="text-sm text-gray-600">La magia está sucediendo ✨ Esto puede tomar 2-5 minutos</p>
             </div>
           </div>
 
-          <div class="space-y-2 text-xs">
-            <div class="flex items-center text-blue-800">
-              <span class="w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs mr-2 text-[10px]">1</span>
-              🌐 Investigando el tema
+          <div class="space-y-3">
+            <div class="progress-step active">
+              <div class="progress-icon active">1</div>
+              <span>🌐 Investigando el tema con IA avanzada</span>
             </div>
-            <div class="flex items-center text-blue-800">
-              <span class="w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs mr-2 text-[10px]">2</span>
-              📝 Generando contenido
+            <div class="progress-step">
+              <div class="progress-icon">2</div>
+              <span>📝 Generando contenido optimizado</span>
             </div>
-            <div class="flex items-center text-blue-800">
-              <span class="w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs mr-2 text-[10px]">3</span>
-              🎨 Creando imagen
+            <div class="progress-step">
+              <div class="progress-icon">3</div>
+              <span>🎨 Creando imagen impactante</span>
             </div>
-            <div class="flex items-center text-blue-800">
-              <span class="w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs mr-2 text-[10px]">4</span>
-              💾 Guardando artículo
+            <div class="progress-step">
+              <div class="progress-icon">4</div>
+              <span>💾 Guardando obra maestra</span>
             </div>
           </div>
         </div>
+      </div>
+    } -->
+  </div>
+
+  <!-- Modal Footer -->
+  <div class="modal-footer">
+    <button type="button" (click)="closeModal()" [disabled]="isGenerating()" class="btn btn-secondary btn-outline">
+      ❌ Cancelar
+    </button>
+    <button
+      type="submit"
+      [disabled]="isGenerating() || !topic().trim()"
+      (click)="generateArticle()"
+      class="btn btn-primary">
+      @if (isGenerating()) {
+        <svg class="loading-spinner" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Generando Magia...
+      } @else {
+          🚀 ¡Generar Artículo!
       }
-    </div>
+    </button>
   </div>
 </div>

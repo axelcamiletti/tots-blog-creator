@@ -2,7 +2,7 @@
 -- Execute this script in Supabase SQL Editor
 
 -- 1. Create ENUM for article status
-CREATE TYPE article_status AS ENUM ('draft', 'in-progress', 'published', 'paused');
+CREATE TYPE article_status AS ENUM ('draft', 'in-progress', 'published', 'paused', 'ready-to-publish');
 
 -- 2. Add status column to articles table
 ALTER TABLE articles 

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { SupabaseService } from '../services/supabaseService';
-import { OpenAIService } from '../services/markdownOpenaiService';
+import { OpenAIService } from '../services/openaiService';
 import { ApiResponse, Article, CreateArticleRequest } from '../interfaces/interfaces';
 
 export class ArticlesController {
@@ -141,6 +141,12 @@ export class ArticlesController {
             const { id } = req.params;
             const updates = req.body;
 
+            console.log('🔄 [ArticlesController] Actualizando artículo:', {
+                id,
+                updates: Object.keys(updates),
+                status: updates.status
+            });
+
             // Verificar que el artículo existe
             const existingArticle = await this.supabaseService.getArticleById(id);
             if (!existingArticle) {
@@ -154,6 +160,12 @@ export class ArticlesController {
             // Actualizar artículo
             const updatedArticle = await this.supabaseService.updateArticle(id, updates);
 
+            console.log('✅ [ArticlesController] Artículo actualizado exitosamente:', {
+                id: updatedArticle.id,
+                status: updatedArticle.status,
+                title: updatedArticle.title
+            });
+
             const response: ApiResponse<Article> = {
                 success: true,
                 data: updatedArticle,
@@ -162,7 +174,7 @@ export class ArticlesController {
 
             res.json(response);
         } catch (error) {
-            console.error('Error updating article:', error);
+            console.error('❌ [ArticlesController] Error updating article:', error);
             
             const response: ApiResponse<null> = {
                 success: false,

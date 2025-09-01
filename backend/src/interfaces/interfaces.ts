@@ -1,6 +1,6 @@
 // Interfaces compartidas entre backend y frontend
 
-export type ArticleStatus = 'draft' | 'in-progress' | 'published' | 'paused';
+export type ArticleStatus = 'draft' | 'in-progress' | 'published' | 'paused' | 'ready-to-publish';
 
 export interface Article {
   id: string;
