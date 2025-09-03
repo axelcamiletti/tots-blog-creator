@@ -1,4 +1,4 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, ViewChild, ElementRef } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ArticleGenerator } from './components/article-generator/article-generator';
@@ -13,7 +13,8 @@ import { Observable } from 'rxjs';
 })
 export class App {
   protected readonly title = signal('🚀 TOTS Blog Creator');
-  /* protected readonly showCreateModal = signal(false); */
+
+  @ViewChild('createArticleModal') createArticleModal!: ElementRef<HTMLDialogElement>;
 
   private creditsService = inject(OpenaiCreditsService);
 
@@ -38,6 +39,10 @@ export class App {
 
   refreshCredits(): void {
     this.creditsService.refreshCredits();
+  }
+
+  closeModal(): void {
+    this.createArticleModal.nativeElement.close();
   }
 
   /* openCreateArticleModal(): void {

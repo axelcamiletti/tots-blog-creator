@@ -61,5 +61,5 @@
 
 
 <dialog #createArticleModal closedby="any">
-  <app-article-generator></app-article-generator>
+  <app-article-generator (closeModalEvent)="closeModal()"></app-article-generator>
 </dialog>

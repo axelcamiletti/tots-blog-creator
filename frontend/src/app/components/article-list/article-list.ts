@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { ArticleService } from '../../services/article.service';
+import { ArticleService, LoadingArticle, NotificationMessage } from '../../services/article.service';
 import { Article } from '../../models/interfaces';
 
 @Component({
@@ -17,6 +17,8 @@ export class ArticleList {
   protected readonly articles = signal<Article[]>([]);
   protected readonly loading = signal(true);
   protected readonly error = signal('');
+  protected readonly loadingArticles = signal<LoadingArticle[]>([]);
+  protected readonly notification = signal<NotificationMessage | null>(null);
 
   protected readonly segments = ['IA', 'Apps móviles', 'Sportech', 'Ciberseguridad'] as const;
 
@@ -33,6 +35,23 @@ export class ArticleList {
 
   constructor() {
     this.loadArticles();
+
+    // Suscribirse a artículos en generación
+    this.articleService.loadingArticles$.subscribe(loadingArticles => {
+      this.loadingArticles.set(loadingArticles);
+    });
+
+    // Suscribirse a notificaciones
+    this.articleService.notifications$.subscribe(notification => {
+      this.notification.set(notification);
+
+      // Si hay una notificación de éxito, recargar artículos
+      if (notification?.type === 'success') {
+        setTimeout(() => {
+          this.loadArticles();
+        }, 1000);
+      }
+    });
   }
 
   protected loadArticles() {
@@ -131,5 +150,14 @@ export class ArticleList {
     }
 
     return statusLabels[status];
+  }
+
+  protected dismissNotification() {
+    this.articleService.clearNotification();
+  }
+
+  protected formatLoadingTime(startTime: Date): string {
+    const elapsed = Math.floor((Date.now() - startTime.getTime()) / 1000);
+    return `${elapsed}s`;
   }
 }

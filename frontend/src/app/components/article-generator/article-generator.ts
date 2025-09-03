@@ -60,43 +60,21 @@ export class ArticleGenerator {
         author: this.author().trim()
       };
 
-      console.log('📤 [ArticleGenerator] Enviando request al backend:', request);
+      console.log('📤 [ArticleGenerator] Enviando request:', request);
 
-      // Navegar inmediatamente al editor en modo "generando"
-      console.log('🔄 [ArticleGenerator] Navegando al editor en modo generación...');
-      this.router.navigate(['/edit/generating'], {
-        state: {
-          request: request,
-          isGenerating: true
-        }
-      });
-
-      // Cerrar el modal después de navegar
+      // Cerrar el modal inmediatamente
       this.closeModal();
 
-      // Continuar con la generación en background
-      const response = await this.articleService.generateArticleAsync(request);
+      // Iniciar generación en background usando el nuevo método del service
+      this.articleService.generateArticleWithLoading(request);
 
-      console.log('📥 [ArticleGenerator] Respuesta del backend:', response);
+      // Resetear formulario
+      this.resetForm();
 
-      if (response.success && response.data) {
-        console.log('✅ [ArticleGenerator] Artículo generado exitosamente, ID:', response.data.id);
-        // Navegar al editor con el artículo creado
-        this.router.navigate(['/edit', response.data.id]);
-      } else {
-        console.error('❌ [ArticleGenerator] Error en la respuesta:', response.error);
-        this.error.set(response.error || 'Error generando el artículo');
-        // Volver al generador si hay error
-        this.router.navigate(['/create']);
-      }
     } catch (error) {
       console.error('💥 [ArticleGenerator] Error inesperado:', error);
-      console.error('💥 [ArticleGenerator] Stack trace:', (error as Error).stack);
       this.error.set('Error inesperado al generar el artículo');
-      // Volver al generador si hay error
-      this.router.navigate(['/create']);
     } finally {
-      console.log('🏁 [ArticleGenerator] Finalizando proceso de generación');
       this.isGenerating.set(false);
     }
   }
