@@ -251,4 +251,46 @@ export class ArticlesController {
             res.status(500).json(response);
         }
     }
+
+    // POST /api/articles/:id/export - Exportar artículo para web
+    async exportToWeb(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            console.log('🌐 [Export] Iniciando exportación para artículo:', id);
+
+            // Obtener artículo
+            const article = await this.supabaseService.getArticleById(id);
+            if (!article) {
+                const response: ApiResponse<null> = {
+                    success: false,
+                    error: 'Article not found'
+                };
+                return res.status(404).json(response);
+            }
+
+            console.log('📄 [Export] Artículo encontrado:', article.title);
+
+            // Generar archivo ZIP con contenido exportado
+            const zipBuffer = await this.openaiService.exportArticleToWeb(article);
+
+            // Configurar headers para descarga
+            const filename = `article-${article.id}-export.zip`;
+            res.setHeader('Content-Type', 'application/zip');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            res.setHeader('Content-Length', zipBuffer.length);
+
+            console.log('✅ [Export] Enviando archivo ZIP:', filename);
+            res.send(zipBuffer);
+
+        } catch (error) {
+            console.error('💥 [Export] Error en exportación:', error);
+            
+            const response: ApiResponse<null> = {
+                success: false,
+                error: error instanceof Error ? error.message : 'Export failed'
+            };
+
+            res.status(500).json(response);
+        }
+    }
 }

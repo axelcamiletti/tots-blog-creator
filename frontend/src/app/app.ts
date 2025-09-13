@@ -26,15 +26,15 @@ export class App {
   }
 
   getCreditBarColor(percentage: number): string {
-    if (percentage > 50) return 'bg-green-500';
-    if (percentage > 25) return 'bg-yellow-500';
-    return 'bg-red-500';
+    if (percentage > 75) return 'bg-red-500';
+    if (percentage > 50) return 'bg-yellow-500';
+    return 'bg-green-500';
   }
 
   getCreditTextColor(percentage: number): string {
-    if (percentage > 50) return 'text-green-400';
-    if (percentage > 25) return 'text-yellow-400';
-    return 'text-red-400';
+    if (percentage > 75) return 'text-red-400';
+    if (percentage > 50) return 'text-yellow-400';
+    return 'text-green-400';
   }
 
   refreshCredits(): void {

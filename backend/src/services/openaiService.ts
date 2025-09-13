@@ -1,5 +1,9 @@
 import OpenAI from 'openai';
 import { GeneratedArticle, ResearchResult } from '../interfaces/interfaces';
+import sharp from 'sharp';
+import archiver from 'archiver';
+import slugify from 'slugify';
+import fetch from 'node-fetch';
 const { tavily } = require("@tavily/core");
 
 
@@ -21,102 +25,6 @@ export class OpenAIService {
         return content;
     }
 
-    /* async executeArticleCreation(topic: string): Promise<ResearchResult> {
-        console.log('🔍 Ejecutando investigación profunda sobre:', topic);
-
-        try {
-
-            const query = 'acá va el query del usuario';
-
-            // Paso 3: Búsqueda web con Tavily
-            const webResults = await this.searchWeb(query);
-            
-            
-        } catch (error) {
-            console.error('❌ Error en investigación profunda:', error);
-            throw new Error(`Failed to execute deep research: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-    } */
-
-    /* private async clarifyResearchPrompt(topic: string): Promise<string> {
-        console.log('🔍 Clarificando prompt para investigación profunda...');
-        
-        const instructions = `
-Eres un asistente que mejora prompts de investigación. Tu trabajo es tomar una tarea de investigación básica y producir instrucciones detalladas para un investigador que completará la tarea.
-
-DIRECTRICES:
-1. **Maximizar Especificidad y Detalle**
-- Incluir todas las preferencias conocidas del usuario y listar explícitamente atributos clave o dimensiones a considerar.
-
-2. **Completar Dimensiones No Declaradas pero Necesarias**
-- Si ciertos atributos son esenciales para un output significativo pero el usuario no los ha proporcionado, declarar explícitamente que son abiertos o sin restricción específica.
-
-3. **Evitar Suposiciones No Justificadas**
-- Si el usuario no ha proporcionado un detalle particular, no inventar uno.
-
-4. **Usar Primera Persona**
-- Redactar la solicitud desde la perspectiva del usuario.
-
-5. **Fuentes y Idioma**
-- Para contenido académico o científico, priorizar enlaces directos a papers originales o publicaciones oficiales.
-- Responder en español a menos que se especifique otro idioma.
-
-NO completes la investigación tú mismo, solo proporciona instrucciones sobre cómo completarla.`;
-
-        const inputText = `
-Investigar a profundidad sobre este tema para crear contenido de blog de alta calidad:
-
-TEMA: ${topic}
-
-Necesito una investigación exhaustiva que cubra contexto, tendencias actuales, puntos clave, conceptos relacionados, opiniones de expertos y estadísticas relevantes.`;
-
-        try {
-            const response = await this.openai.chat.completions.create({
-                model: 'gpt-4.1',
-                messages: [{ 
-                    role: 'system', 
-                    content: instructions 
-                }, { 
-                    role: 'user', 
-                    content: inputText 
-                }],
-            });
-
-            const clarifiedPrompt = response.choices[0].message.content || inputText;
-            console.log('✅ Prompt clarificado correctamente');
-            
-            return clarifiedPrompt;
-        } catch (error) {
-            console.error('❌ Error clarificando prompt:', error);
-            return inputText;
-        }
-    } */
-
-    /* private async generateSearchQuery(topic: string): Promise<string> {
-        console.log('🔍 Generando query para búsqueda web');
-
-        const inputText = `Genera un texto de búsqueda optimizado para encontrar información relevante sobre: ${topic}
-
-Responde solo con el texto de búsqueda, sin explicaciones adicionales.`;
-
-        try {
-            const response = await this.openai.chat.completions.create({
-                model: "gpt-4.1",
-                messages: [{ 
-                    role: 'user', 
-                    content: inputText 
-                }],
-            });
-
-            const searchQuery = response.choices[0].message.content || topic;
-            console.log('✅ Query para búsqueda generado:', searchQuery);
-            
-            return searchQuery;
-        } catch (error) {
-            console.error('❌ Error generando query:', error);
-            return topic;
-        }
-    } */
 
     async searchWeb(query: string): Promise<any[]> {
         console.log('🌐 Realizando búsqueda web con Tavily...');
@@ -363,5 +271,330 @@ ASIGNACIONES AUTOMÁTICAS:
             console.error('❌ Error generando imagen:', error);
             throw new Error(`Error crítico generando imagen: ${error}`);
         }
+    }
+
+    // Método principal para exportar artículo a formato web
+    async exportArticleToWeb(article: any): Promise<Buffer> {
+        console.log('🌐 [Export] Iniciando exportación completa para:', article.title);
+
+        try {
+            // 1. Traducir contenido a inglés
+            console.log('🔄 [Export] Paso 1: Traduciendo contenido...');
+            const translatedContent = await this.translateArticleToEnglish(article);
+
+            // 2. Convertir markdown a HTML
+            console.log('🔄 [Export] Paso 2: Convirtiendo markdown a HTML...');
+            const htmlContent = await this.convertMarkdownToHtml(article.content, translatedContent.content_en);
+
+            // 3. Procesar imágenes
+            console.log('🔄 [Export] Paso 3: Procesando imágenes...');
+            const imageFiles = await this.processHeaderImage(article.image_url);
+
+            // 4. Generar slugs
+            console.log('🔄 [Export] Paso 4: Generando slugs...');
+            const slugs = this.generateSlugs(article.title, translatedContent.title_en);
+
+            // 5. Crear JSON final
+            console.log('🔄 [Export] Paso 5: Creando JSON...');
+            const exportData = {
+                meta_title_es: article.meta_title,
+                meta_title_en: translatedContent.meta_title_en,
+                meta_description_es: article.meta_description,
+                meta_description_en: translatedContent.meta_description_en,
+                title_es: article.title,
+                title_en: translatedContent.title_en,
+                slug_es: slugs.slug_es,
+                slug_en: slugs.slug_en,
+                content_es: htmlContent.content_es,
+                content_en: htmlContent.content_en,
+                author: article.author,
+                header_image_url: 'images/header',
+                created_date: article.created_at,
+                category: article.segment,
+                sources: article.sources || [],
+                tags_es: article.tags || [],
+                tags_en: translatedContent.tags_en || []
+            };
+
+            // 6. Crear archivo ZIP
+            console.log('🔄 [Export] Paso 6: Creando archivo ZIP...');
+            const zipBuffer = await this.createExportZip(exportData, imageFiles);
+
+            console.log('✅ [Export] Exportación completada exitosamente');
+            return zipBuffer;
+
+        } catch (error) {
+            console.error('💥 [Export] Error en exportación:', error);
+            throw new Error(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    // Traducir artículo completo a inglés
+    private async translateArticleToEnglish(article: any): Promise<any> {
+        console.log('🌐 [Export] Traduciendo artículo a inglés...');
+
+        const prompt = `
+Eres un traductor experto especializado en contenido técnico. Traduce el siguiente artículo del español al inglés, manteniendo:
+
+1. El formato markdown exacto
+2. La estructura y estilo del contenido
+3. La terminología técnica apropiada
+4. El tono profesional
+
+Artículo a traducir:
+- Título: "${article.title}"
+- Meta título: "${article.meta_title}"
+- Meta descripción: "${article.meta_description}"
+- Contenido: 
+${article.content}
+- Tags: ${article.tags?.join(', ') || 'N/A'}
+
+Responde ÚNICAMENTE con un JSON válido`;
+
+        try {
+            const response = await this.openai.responses.create({
+                model: "gpt-5",
+                input: prompt,
+                reasoning: { effort: "low" },
+                text: {
+                    format: {
+                        type: "json_schema",
+                        name: "article_translate",
+                        schema: {
+                            type: "object",
+                            properties: {
+                                title_en: {
+                                    type: "string",
+                                    description: "Título principal del artículo en inglés"
+                                },
+                                meta_title_en: {
+                                    type: "string",
+                                    description: "Meta título del artículo en inglés"
+                                },
+                                meta_description_en: {
+                                    type: "string",
+                                    description: "Meta descripción SEO (150-160 caracteres) en inglés"
+                                },
+                                content_en: {
+                                    type: "string",
+                                    description: "Contenido completo en formato Markdown"
+                                },
+                                tags_en: {
+                                    type: "array",
+                                    items: {
+                                        type: "string"
+                                    },
+                                    description: "Tags del artículo (3-5 tags) en inglés"
+                                },
+                            },
+                            required: ["title_en", "meta_title_en", "meta_description_en", "content_en", "tags_en"],
+                            additionalProperties: false
+                        },
+                        strict: true
+                    }
+                }
+            });
+
+            const articleTranslate = JSON.parse(response.output_text || '{}');
+            
+            console.log(`✅ Artículo traducido con structured output: "${article.title}"`);
+
+            return articleTranslate;
+
+            /* const content = response.choices[0]?.message?.content;
+            if (!content) {
+                throw new Error('No se recibió respuesta de OpenAI para traducción');
+            }
+
+            const cleanedContent = this.cleanJsonResponse(content);
+            return JSON.parse(cleanedContent); */
+
+        } catch (error) {
+            console.error('❌ Error en traducción:', error);
+            throw new Error(`Translation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    // Convertir markdown a HTML usando OpenAI
+    private async convertMarkdownToHtml(content_es: string, content_en: string): Promise<any> {
+        console.log('📝 [Export] Convirtiendo markdown a HTML...');
+
+        const prompt = `
+Eres un experto en conversión de markdown a HTML. Convierte el siguiente contenido markdown a HTML limpio y semántico, siguiendo estas reglas:
+
+1. Usar etiquetas HTML semánticas apropiadas
+2. Mantener la estructura jerárquica del contenido
+3. Usar clases CSS descriptivas cuando sea necesario
+4. Asegurar que el HTML sea válido y bien formateado
+5. No incluir etiquetas <html>, <head> o <body>, solo el contenido del artículo
+
+Contenido en español:
+${content_es}
+
+Contenido en inglés:
+${content_en}
+
+Responde ÚNICAMENTE con un JSON válido.
+`;
+
+        try {
+            /* const response = await this.openai.chat.completions.create({
+                model: "gpt-5",
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.1,
+                max_tokens: 4000
+            });
+
+            const content = response.choices[0]?.message?.content;
+            if (!content) {
+                throw new Error('No se recibió respuesta de OpenAI para conversión HTML');
+            }
+
+            const cleanedContent = this.cleanJsonResponse(content);
+            return JSON.parse(cleanedContent); */
+
+
+            const response = await this.openai.responses.create({
+                model: "gpt-5",
+                input: prompt,
+                reasoning: { effort: "low" },
+                text: {
+                    format: {
+                        type: "json_schema",
+                        name: "article_converted_to_html",
+                        schema: {
+                            type: "object",
+                            properties: {
+                                content_es: {
+                                    type: "string",
+                                    description: "HTML del articulo en español"
+                                },
+                                content_en: {
+                                    type: "string",
+                                    description: "HTML del articulo en inglés"
+                                },
+                            },
+                            required: ["content_es", "content_en"],
+                            additionalProperties: false
+                        },
+                        strict: true
+                    }
+                }
+            });
+
+            const articleConverted = JSON.parse(response.output_text || '{}');
+            
+            console.log(`✅ Artículo convertido exitosamente`);
+
+            return articleConverted;
+
+
+        } catch (error) {
+            console.error('❌ Error en conversión HTML:', error);
+            throw new Error(`HTML conversion failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    // Procesar imagen del header en múltiples formatos y tamaños
+    private async processHeaderImage(imageUrl: string): Promise<{ [key: string]: Buffer }> {
+        console.log('🖼️ [Export] Procesando imagen del header...');
+
+        if (!imageUrl) {
+            throw new Error('No hay imagen de header para procesar');
+        }
+
+        try {
+            // Descargar imagen original
+            const response = await fetch(imageUrl);
+            if (!response.ok) {
+                throw new Error(`Failed to download image: ${response.statusText}`);
+            }
+
+            const imageBuffer = Buffer.from(await response.arrayBuffer());
+
+            // Generar todas las variaciones
+            const imageFiles: { [key: string]: Buffer } = {};
+
+            const sizes = [
+                { suffix: '1x', width: 800 },
+                { suffix: '2x', width: 1600 },
+                { suffix: '3x', width: 2400 }
+            ];
+
+            for (const size of sizes) {
+                // JPG version
+                imageFiles[`header-${size.suffix}.jpg`] = await sharp(imageBuffer)
+                    .resize(size.width, null, { withoutEnlargement: true })
+                    .jpeg({ quality: 85 })
+                    .toBuffer();
+
+                // WebP version
+                imageFiles[`header-${size.suffix}.webp`] = await sharp(imageBuffer)
+                    .resize(size.width, null, { withoutEnlargement: true })
+                    .webp({ quality: 85 })
+                    .toBuffer();
+            }
+
+            console.log('✅ [Export] Imágenes procesadas:', Object.keys(imageFiles));
+            return imageFiles;
+
+        } catch (error) {
+            console.error('❌ Error procesando imagen:', error);
+            throw new Error(`Image processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    // Generar slugs para URLs
+    private generateSlugs(title_es: string, title_en: string): any {
+        console.log('🔗 [Export] Generando slugs...');
+
+        const slugEs = slugify(title_es, {
+            lower: true,
+            strict: true,
+            locale: 'es'
+        });
+
+        const slugEn = slugify(title_en, {
+            lower: true,
+            strict: true,
+            locale: 'en'
+        });
+
+        return { slug_es: slugEs, slug_en: slugEn };
+    }
+
+    // Crear archivo ZIP con todo el contenido
+    private async createExportZip(exportData: any, imageFiles: { [key: string]: Buffer }): Promise<Buffer> {
+        console.log('📦 [Export] Creando archivo ZIP...');
+
+        return new Promise((resolve, reject) => {
+            const archive = archiver('zip', { zlib: { level: 9 } });
+            const buffers: Buffer[] = [];
+
+            archive.on('data', (chunk: any) => {
+                buffers.push(chunk);
+            });
+
+            archive.on('end', () => {
+                const zipBuffer = Buffer.concat(buffers);
+                console.log('✅ [Export] ZIP creado exitosamente, tamaño:', zipBuffer.length, 'bytes');
+                resolve(zipBuffer);
+            });
+
+            archive.on('error', (error: any) => {
+                console.error('❌ Error creando ZIP:', error);
+                reject(error);
+            });
+
+            // Agregar archivo JSON
+            archive.append(JSON.stringify(exportData, null, 2), { name: 'article-data.json' });
+
+            // Agregar imágenes
+            for (const [filename, buffer] of Object.entries(imageFiles)) {
+                archive.append(buffer, { name: `images/${filename}` });
+            }
+
+            archive.finalize();
+        });
     }
 }
