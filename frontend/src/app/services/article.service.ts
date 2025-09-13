@@ -87,6 +87,17 @@ export class ArticleService {
     return firstValueFrom(this.deleteArticle(id));
   }
 
+  // Exportar artículo para web
+  exportArticleToWeb(id: string): Observable<Blob> {
+    return this.http.post(`${this.apiUrl}/articles/${id}/export`, {}, {
+      responseType: 'blob'
+    });
+  }
+
+  async exportArticleToWebAsync(id: string): Promise<Blob> {
+    return firstValueFrom(this.exportArticleToWeb(id));
+  }
+
   // Métodos para manejar estado de loading
   addLoadingArticle(request: CreateArticleRequest): string {
     const tempId = `temp-${Date.now()}`;

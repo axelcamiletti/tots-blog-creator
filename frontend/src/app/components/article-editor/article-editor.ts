@@ -40,6 +40,8 @@ export class ArticleEditor implements OnInit, OnDestroy, AfterViewInit {
   protected readonly isSaving = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly hasUnsavedChanges = signal(false);
+  protected readonly isExporting = signal(false);
+  protected readonly exportProgress = signal<string>('');
 
   // Editor reference
   private markdownEditor: any;
@@ -419,5 +421,78 @@ export class ArticleEditor implements OnInit, OnDestroy, AfterViewInit {
   protected onSelectChange(field: keyof Article, event: Event) {
     const target = event.target as HTMLSelectElement;
     this.updateField(field, target.value);
+  }
+
+  // Exportar artículo para web
+  protected async exportToWeb() {
+    const currentArticle = this.article();
+    if (!currentArticle) {
+      console.warn('❌ [Editor] No hay artículo para exportar');
+      return;
+    }
+
+    console.log('🌐 [Editor] Iniciando exportación para web...');
+    this.isExporting.set(true);
+    this.exportProgress.set('Iniciando exportación...');
+
+    try {
+      // Guardar cambios antes de exportar
+      if (this.hasUnsavedChanges()) {
+        this.exportProgress.set('Guardando cambios...');
+        await this.saveArticle(false);
+      }
+
+      // Simular progreso de exportación
+      const progressSteps = [
+        'Descargando imagen...',
+        'Optimizando imágenes...',
+        'Traduciendo contenido...',
+        'Convirtiendo a HTML...',
+        'Generando paquete...'
+      ];
+
+      let currentStep = 0;
+      const progressInterval = setInterval(() => {
+        if (currentStep < progressSteps.length) {
+          this.exportProgress.set(progressSteps[currentStep]);
+          currentStep++;
+        }
+      }, 2000);
+
+      // Realizar exportación
+      const blob = await this.articleService.exportArticleToWebAsync(currentArticle.id);
+
+      // Limpiar interval
+      clearInterval(progressInterval);
+      this.exportProgress.set('Descargando archivo...');
+
+      // Crear enlace de descarga
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `article-${currentArticle.id}-export.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      console.log('✅ [Editor] Exportación completada exitosamente');
+      this.exportProgress.set('¡Descarga completada!');
+
+      // Limpiar estado después de 2 segundos
+      setTimeout(() => {
+        this.isExporting.set(false);
+        this.exportProgress.set('');
+      }, 2000);
+
+    } catch (error) {
+      console.error('💥 [Editor] Error en exportación:', error);
+      this.exportProgress.set('Error en exportación');
+
+      setTimeout(() => {
+        this.isExporting.set(false);
+        this.exportProgress.set('');
+      }, 3000);
+    }
   }
 }

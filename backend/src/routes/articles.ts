@@ -19,6 +19,9 @@ router.post('/test-image', (req, res) => articlesController.testImageGeneration(
 // PUT /api/articles/:id - Actualizar artículo
 router.put('/:id', (req, res) => articlesController.updateArticle(req, res));
 
+// POST /api/articles/:id/export - Exportar artículo para web
+router.post('/:id/export', (req, res) => articlesController.exportToWeb(req, res));
+
 // DELETE /api/articles/:id - Eliminar artículo
 router.delete('/:id', (req, res) => articlesController.deleteArticle(req, res));
 
